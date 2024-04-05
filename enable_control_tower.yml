@@ -4,7 +4,7 @@
 ---
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: "AWS::Serverless-2016-10-31"
-Description: Organization reference architecture for SMB (Enable Control Tower)
+Description: Guidance for Organizations on AWS (Enable Control Tower)
 
 Parameters:
   pRegions:
@@ -59,8 +59,12 @@ Parameters:
 Resources:
   rAWSControlTowerAdmin:
     Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "Ignoring explicit role name"
     Properties:
-      RoleName: AWSControlTowerAdmin
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -71,9 +75,22 @@ Resources:
       Path: "/service-role/"
       ManagedPolicyArns:
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSControlTowerServiceRolePolicy"
+      RoleName: AWSControlTowerAdmin
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rAWSControlTowerAdmin
   
   rAWSControlTowerAdminPolicy:
-    Type: 'AWS::IAM::Policy'
+    Type: "AWS::IAM::Policy"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W12
+            reason: "Ignoring star in policy"
     Properties:
       PolicyName: AWSControlTowerAdminPolicy
       PolicyDocument:
@@ -87,8 +104,12 @@ Resources:
   
   rAWSControlTowerCloudTrailRole:
     Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "Ignoring explicit role name"
     Properties:
-      RoleName: AWSControlTowerCloudTrailRole
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -97,6 +118,14 @@ Resources:
               Service: "cloudtrail.amazonaws.com"
             Action: "sts:AssumeRole"
       Path: "/service-role/"
+      RoleName: AWSControlTowerCloudTrailRole
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rAWSControlTowerCloudTrailRole
 
   rAWSControlTowerCloudTrailRolePolicy:
     Type: "AWS::IAM::Policy"
@@ -115,8 +144,12 @@ Resources:
   
   rAWSControlTowerConfigAggregatorRoleForOrganizations:
     Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "Ignoring explicit role name"
     Properties:
-      RoleName: AWSControlTowerConfigAggregatorRoleForOrganizations
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -127,11 +160,23 @@ Resources:
       Path: "/service-role/"
       ManagedPolicyArns:
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSConfigRoleForOrganizations"
+      RoleName: AWSControlTowerConfigAggregatorRoleForOrganizations
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rAWSControlTowerConfigAggregatorRoleForOrganizations
   
   rAWSControlTowerStackSetRole:
     Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "Ignoring explicit role name"
     Properties:
-      RoleName: AWSControlTowerStackSetRole
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -140,6 +185,14 @@ Resources:
               Service: "cloudformation.amazonaws.com"
             Action: "sts:AssumeRole"
       Path: "/service-role/"
+      RoleName: AWSControlTowerStackSetRole
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rAWSControlTowerStackSetRole
   
   rAWSControlTowerStackSetRolePolicy:
     Type: "AWS::IAM::Policy"

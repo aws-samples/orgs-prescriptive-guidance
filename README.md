@@ -39,6 +39,7 @@ This repository contains a collection of [AWS CloudFormation](https://aws.amazon
 | pDeveloperPrefix         | String | app | Prefix used by developers when creating IAM roles and CloudFormation stacks |
 | pCloudFormationRoleName  | String | CloudFormationRole | Name of the IAM role used by AWS CloudFormation |
 | pServiceCatalogRoleName  | String | ServiceCatalogRole | Name of the IAM role used by AWS Service Catalog |
+| pBreakGlassAdminRoleName | String | BreakGlassAdministratorRole | Name of the IAM role used by administrators in the event of an emergency |
 | pRegions                 | String | us-east-1 | Comma-delimited list of AWS Regions |
 | pSandboxOuName           | String | Sandbox | Name of the organizational unit for sandbox AWS accounts |
 | pSecurityOuName          | String | Security_Prod | Name of the organizational unit for security-related AWS accounts |
