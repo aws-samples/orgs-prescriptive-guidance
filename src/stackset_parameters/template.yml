@@ -1,0 +1,74 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Organization reference architecture for SMB - Systems Manager Parameters
+
+Parameters:
+  pOrganizationId:
+    Type: String
+    Description: Organization ID
+  pCloudFormationRoleName:
+    Type: String
+    Description: CloudFormation IAM role name
+    Default: CloudFormationRole
+    ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
+    AllowedPattern: "[a-zA-Z0-9]+"
+  pServiceCatalogRoleName:
+    Type: String
+    Description: ServiceCatalog IAM role name
+    Default: ServiceCatalogRole
+    ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
+    AllowedPattern: "[a-zA-Z0-9]+"
+
+Resources:
+  OrganizationIdParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      DataType: text
+      Description: Organization ID
+      Name: /platform/org/OrganizationId
+      Tier: Standard
+      Type: String
+      Value: !Ref pOrganizationId
+
+  CloudFormationRoleNameParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      DataType: text
+      Description: CloudFormation IAM role name
+      Name: /platform/iam/CloudFormationRole
+      Tier: Standard
+      Type: String
+      Value: !Ref pCloudFormationRoleName
+  
+  CloudFormationRoleArnParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      DataType: text
+      Description: CloudFormation IAM role ARN
+      Name: /platform/iam/CloudFormationRoleArn
+      Tier: Standard
+      Type: String
+      Value: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pCloudFormationRoleName}"
+  
+  ServiceCatalogRoleNameParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      DataType: text
+      Description: ServiceCatalog IAM role name
+      Name: /platform/iam/ServiceCatalogRole
+      Tier: Standard
+      Type: String
+      Value: !Ref pServiceCatalogRoleName
+  
+  ServiceCatalogRoleArnParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      DataType: text
+      Description: ServiceCatalog IAM role ARN
+      Name: /platform/iam/ServiceCatalogRoleArn
+      Tier: Standard
+      Type: String
+      Value: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pServiceCatalogRoleName}"

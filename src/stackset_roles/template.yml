@@ -1,0 +1,209 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Organization reference architecture for SMB - Baseline IAM Roles
+
+Parameters:
+  pDeveloperBoundaryName:
+    Type: String
+    Description: Name of the developers permission boundary
+    Default: DeveloperBoundary
+    ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
+    AllowedPattern: "[a-zA-Z0-9]+"
+    MinLength: 1
+  pDeveloperPrefix:
+    Type: String
+    Description: Required prefix for self-service IAM roles and CloudFormation stacks
+    Default: app
+    ConstraintDescription: "must only contain lowercase letters and numbers"
+    AllowedPattern: "[a-z0-9]+"
+    MinLength: 1
+  pCloudFormationRoleName:
+    Type: String
+    Description: CloudFormation IAM role name
+    Default: CloudFormationRole
+    ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
+    AllowedPattern: "[a-zA-Z0-9]+"
+    MinLength: 1
+  pServiceCatalogRoleName:
+    Type: String
+    Description: Service Catalog IAM role name
+    Default: ServiceCatalogRole
+    ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
+    AllowedPattern: "[a-zA-Z0-9]+"
+    MinLength: 1
+  pBreakGlassAdminRoleName:
+    Type: String
+    Description: Break Glass admin role name
+    Default: BreakGlassAdministratorRole
+    ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
+    AllowedPattern: "[a-zA-Z0-9]+"
+    MinLength: 1
+
+Resources:
+  rBreakGlassAdminRole:
+    Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "Ignoring explicit role name"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:user/Administrator"
+          Action: "sts:AssumeRole"
+          Condition:
+            StringEquals:
+              "aws:SourceAccount": !Ref "AWS::AccountId"
+      Description: !Sub "DO NOT DELETE - Used by break glass administrators. Created by CloudFormation ${AWS::StackId}"        
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"
+      RoleName: !Ref pBreakGlassAdminRoleName
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rBreakGlassAdminRole
+
+  rServiceCatalogRole:
+    Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "Ignoring explicit role name"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: !Sub "servicecatalog.${AWS::URLSuffix}"
+          Action: "sts:AssumeRole"
+          Condition:
+            StringEquals:
+              "aws:SourceAccount": !Ref "AWS::AccountId"
+            #ArnLike:
+            #  "aws:SourceArn": !Sub "aws:${AWS::Partition}:servicecatalog:${AWS::Region}:${AWS::AccountId}:*"
+      Description: !Sub "DO NOT DELETE - Used by Service Catalog. Created by CloudFormation ${AWS::StackId}"
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"
+      RoleName: !Ref pServiceCatalogRoleName
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rServiceCatalogRole
+
+  rCloudFormationRole:
+    Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "Ignoring explicit role name"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: !Sub "cloudformation.${AWS::URLSuffix}"
+          Action: "sts:AssumeRole"
+          Condition:
+            StringEquals:
+              "aws:SourceAccount": !Ref "AWS::AccountId"
+            ArnLike:
+              "aws:SourceArn": !Sub "aws:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${pDeveloperPrefix}/*"
+      Description: !Sub "DO NOT DELETE - Used by CloudFormation. Created by CloudFormation ${AWS::StackId}"
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"
+      PermissionsBoundary: !Ref rDeveloperBoundary
+      RoleName: !Ref pCloudFormationRoleName
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rCloudFormationRole
+
+  rDeveloperBoundary:
+    Type: "AWS::IAM::ManagedPolicy"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F5
+            reason: All actions allowed in boundary policy
+          - id: W13
+            reason: All resources allowed in boundary policy
+          - id: W28
+            reason: Boundary needs defined name to self reference
+    Properties:
+      Description: Permission boundary for developers
+      ManagedPolicyName: !Ref pDeveloperBoundaryName
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowModifyIamRolesWithBoundary
+            Effect: Allow
+            Action:
+              - "iam:AttachRolePolicy"
+              - "iam:CreateRole"
+              - "iam:DeleteRolePolicy"
+              - "iam:DetachRolePolicy"
+              - "iam:PutRolePermissionsBoundary"
+              - "iam:PutRolePolicy"
+            Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pDeveloperPrefix}/*"
+            Condition:
+              ArnEquals:
+                "iam:PermissionsBoundary": !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/${pDeveloperBoundaryName}" # references self
+          - Sid: AllowModifyIamRoles
+            Effect: Allow
+            Action:
+              - "iam:DeleteRole"
+              - "iam:GetRole"
+              - "iam:PassRole"
+              - "iam:TagRole"
+              - "iam:UntagRole"
+              - "iam:UpdateAssumeRolePolicy"
+              - "iam:UpdateRole"
+              - "iam:UpdateRoleDescription"
+            Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pDeveloperPrefix}/*"
+          - Sid: OverlyPermissiveAllowedServices
+            Effect: Allow
+            Action:
+              - "lambda:*"
+              - "apigateway:*"
+              - "events:*"
+              - "dynamodb:*"
+              - "s3:*"
+              - "logs:*"
+            Resource: "*"
+
+Outputs:
+  CloudFormationRoleArn:
+    Description: CloudFormation IAM role ARN
+    Value: !GetAtt rCloudFormationRole.Arn
+  CloudFormationRoleName:
+    Description: CloudFormation IAM role name
+    Value: !Ref rCloudFormationRole
+  ServiceCatalogRoleArn:
+    Description: Service Catalog IAM role ARN
+    Value: !GetAtt rServiceCatalogRole.Arn
+  ServiceCatalogRoleName:
+    Description: Service Catalog IAM role name
+    Value: !Ref rServiceCatalogRole
+  DeveloperBoundaryPolicyArn:
+    Description: Developer boundary IAM policy ARN
+    Value: !Ref rDeveloperBoundary

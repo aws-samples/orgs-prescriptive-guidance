@@ -1,0 +1,209 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Description: Organization reference architecture for SMB (Enable Control Tower)
+
+Parameters:
+  pRegions:
+    Type: CommaDelimitedList
+    Description: Comma-delimited list of regions to govern
+    Default: us-east-1
+  pSandboxOuName:
+    Type: String
+    Description: Organizational Unit (OU) for sandbox accounts
+    Default: Sandbox
+  pSecurityOuName:
+    Type: String
+    Description: Organizational Unit (OU) for security accounts
+    Default: Security_Prod
+  pControlTowerVersion:
+    Type: String
+    Description: Control Tower landing zone version
+    Default: "3.3"
+    AllowedValues:
+      - "3.3"
+  pLoggingAccountEmail:
+    Type: String
+    Description: Email address for a new logging AWS account
+    AllowedPattern: '[^\s@]+@[^\s@]+\.[^\s@]+'
+  pLoggingAccountName:
+    Type: String
+    Description: Name for a new logging AWS account
+    Default: log-archive-prod
+    AllowedPattern: '[a-z0-9-]+'
+  pSecurityAccountEmail:
+    Type: String
+    Description: Email address for a new security AWS account
+    AllowedPattern: '[^\s@]+@[^\s@]+\.[^\s@]+'
+  pSecurityAccountName:
+    Type: String
+    Description: Name for a new security AWS account
+    Default: security-tooling-prod
+    AllowedPattern: '[a-z0-9-]+'
+  pLoggingBucketRetentionPeriod:
+    Type: Number
+    Description: Retention period for centralized logging bucket (in days)
+    Default: 365
+    MinValue: 1
+    MaxValue: 5475 # 15 years
+  pAccessLoggingBucketRetentionPeriod:
+    Type: Number
+    Description: Retention period for access logging bucket (in days)
+    Default: 365
+    MinValue: 1
+    MaxValue: 5475 # 15 years
+
+Resources:
+  rAWSControlTowerAdmin:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: AWSControlTowerAdmin
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "controltower.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: "/service-role/"
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSControlTowerServiceRolePolicy"
+  
+  rAWSControlTowerAdminPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: AWSControlTowerAdminPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "ec2:DescribeAvailabilityZones"
+            Resource: "*"
+      Roles:
+        - !Ref rAWSControlTowerAdmin
+  
+  rAWSControlTowerCloudTrailRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: AWSControlTowerCloudTrailRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "cloudtrail.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: "/service-role/"
+
+  rAWSControlTowerCloudTrailRolePolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: AWSControlTowerCloudTrailRolePolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            Resource: !Sub "arn:${AWS::Partition}:logs:*:*:log-group:aws-controltower/CloudTrailLogs:*"
+      Roles:
+        - !Ref rAWSControlTowerCloudTrailRole
+  
+  rAWSControlTowerConfigAggregatorRoleForOrganizations:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: AWSControlTowerConfigAggregatorRoleForOrganizations
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "config.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: "/service-role/"
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSConfigRoleForOrganizations"
+  
+  rAWSControlTowerStackSetRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: AWSControlTowerStackSetRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "cloudformation.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: "/service-role/"
+  
+  rAWSControlTowerStackSetRolePolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: AWSControlTowerStackSetRolePolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "sts:AssumeRole"
+            Resource: !Sub "arn:${AWS::Partition}:iam::*:role/AWSControlTowerExecution"
+      Roles:
+        - !Ref rAWSControlTowerStackSetRole
+
+  rLoggingAccount:
+    Type: "AWS::Organizations::Account"
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      AccountName: !Ref pLoggingAccountName
+      Email: !Ref pLoggingAccountEmail
+      RoleName: AWSControlTowerExecution
+
+  rSecurityAccount:
+    Type: "AWS::Organizations::Account"
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    DependsOn: rLoggingAccount
+    Properties:
+      AccountName: !Ref pSecurityAccountName
+      Email: !Ref pSecurityAccountEmail
+      RoleName: AWSControlTowerExecution
+
+  rControlTowerLandingZone:
+    Type: "AWS::ControlTower::LandingZone"
+    Properties:
+      Version: !Ref pControlTowerVersion
+      Manifest:
+        governedRegions: !Ref pRegions
+        organizationStructure:
+          security:
+            name: !Ref pSecurityOuName
+          sandbox:
+            name: !Ref pSandboxOuName
+        centralizedLogging:
+          accountId: !Ref rLoggingAccount
+          configurations:
+            loggingBucket:
+              retentionDays: !Ref pLoggingBucketRetentionPeriod
+            accessLoggingBucket:
+              retentionDays: !Ref pAccessLoggingBucketRetentionPeriod
+          enabled: true
+        securityRoles:
+          accountId: !Ref rSecurityAccount
+        accessManagement:
+          enabled: true
+
+Outputs:
+  LoggingAccountId:
+    Description: Logging Account ID
+    Value: !Ref rLoggingAccount
+  SecurityAccountId:
+    Description: Security Account ID
+    Value: !Ref rSecurityAccount
+  LandingZoneId:
+    Description: Control Tower Landing Zone ID
+    Value: !GetAtt rControlTowerLandingZone.LandingZoneIdentifier

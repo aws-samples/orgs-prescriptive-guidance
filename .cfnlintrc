@@ -1,0 +1,8 @@
+templates:
+- enable_control_tower.yml
+- existing_org_template.yml
+- no_org_template.yml
+- src/stackset_parameters/template.yml
+- src/stackset_roles/template.yml
+include_checks:
+- I

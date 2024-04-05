@@ -1,0 +1,450 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Description: Organization reference architecture for SMB
+
+Parameters:
+  pSSOInstanceId:
+    Type: String
+    Description: AWS SSO Instance ID
+    Default: ""
+  pDeveloperPrefix:
+    Type: String
+    Description: Required prefix for self-service IAM roles and CloudFormation stacks
+    Default: app
+    ConstraintDescription: "must only contain lowercase letters and numbers"
+    AllowedPattern: "[a-z0-9]+"
+    MinLength: 1
+  pCloudFormationRoleName:
+    Type: String
+    Description: CloudFormation IAM role name
+    Default: CloudFormationRole
+    ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
+    AllowedPattern: "[a-zA-Z0-9]+"
+    MinLength: 1
+  pServiceCatalogRoleName:
+    Type: String
+    Description: Service Catalog IAM role name
+    Default: ServiceCatalogRole
+    ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
+    AllowedPattern: "[a-zA-Z0-9]+"
+    MinLength: 1
+  pBreakGlassAdminRoleName:
+    Type: String
+    Description: Break Glass admin role name
+    Default: BreakGlassAdministratorRole
+    ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
+    AllowedPattern: "[a-zA-Z0-9]+"
+    MinLength: 1
+  pRegions:
+    Type: CommaDelimitedList
+    Description: Comma-delimited list of regions to deploy the stacksets
+    Default: us-east-1
+  pSandboxOuName:
+    Type: String
+    Description: Organizational Unit (OU) for sandbox accounts
+    Default: Sandbox
+  pSecurityOuName:
+    Type: String
+    Description: Organizational Unit (OU) for security accounts
+    Default: Security_Prod
+
+Conditions:
+  cHasInstanceArn: !Not [!Equals [!Ref pSSOInstanceId, ""]]
+
+Resources:
+  rOrganization:
+    Type: "AWS::Organizations::Organization"
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      FeatureSet: ALL
+
+  rOrganizationPolicy:
+    Type: "AWS::Organizations::ResourcePolicy"
+    Properties:
+      Content:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowDescribeOrganizationFromAccount
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+            Action: "organizations:DescribeOrganization"
+            Resource: "*"
+          - Sid: AllowDescribeOrganizationFromOrg
+            Effect: Allow
+            Principal: "*"
+            Action: "organizations:DescribeOrganization"
+            Resource: "*"
+            Condition:
+              StringEquals:
+                "aws:PrincipalOrgID": !GetAtt rOrganization.Id
+
+  rSecurityPolicy:
+    Type: "AWS::Organizations::Policy"
+    Properties:
+      Content:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Deny
+            Action: "*"
+            Resource: "*"
+            Condition:
+              StringLike:
+                "aws:PrincipalArn": !Sub "arn:${AWS::Partition}:iam::*:root"
+          - Effect: Deny
+            Action: "organizations:LeaveOrganization"
+            Resource: "*"
+      Name: aws-platform-security
+      TargetIds:
+        - !GetAtt rOrganization.RootId
+      Type: SERVICE_CONTROL_POLICY
+
+  rExceptionsOu:
+    Type: "AWS::Organizations::OrganizationalUnit"
+    Properties:
+      Name: Exceptions
+      ParentId: !GetAtt rOrganization.RootId
+
+  rInfrastructureOu:
+    Type: "AWS::Organizations::OrganizationalUnit"
+    Properties:
+      Name: Infrastructure
+      ParentId: !GetAtt rOrganization.RootId
+
+  rSecurityOu:
+    Type: "AWS::Organizations::OrganizationalUnit"
+    Properties:
+      Name: !Ref pSecurityOuName
+      ParentId: !GetAtt rOrganization.RootId
+
+  rSandboxOu:
+    Type: "AWS::Organizations::OrganizationalUnit"
+    Properties:
+      Name: !Ref pSandboxOuName
+      ParentId: !GetAtt rOrganization.RootId
+
+  rWorkloadsOu:
+    Type: "AWS::Organizations::OrganizationalUnit"
+    Properties:
+      Name: Workloads
+      ParentId: !GetAtt rOrganization.RootId
+
+  rNonProdOu:
+    Type: "AWS::Organizations::OrganizationalUnit"
+    Properties:
+      Name: NonProd
+      ParentId: !Ref rWorkloadsOu
+
+  rProdOu:
+    Type: "AWS::Organizations::OrganizationalUnit"
+    Properties:
+      Name: Prod
+      ParentId: !Ref rWorkloadsOu
+
+  rBreakGlassRoleAssumePolicy:
+    Type: "AWS::IAM::UserPolicy"
+    Properties:
+      PolicyName: BreakGlassRoleAssumePolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "sts:AssumeRole"
+            Resource: !Sub "arn:${AWS::Partition}:iam::*:role/${pBreakGlassAdminRoleName}"
+      UserName: !Ref rBreakGlassAdministratorUser
+
+  rBreakGlassAdministratorUser:
+    Type: "AWS::IAM::User"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F2000
+            reason: "Ignoring no groups"
+    Properties:
+      UserName: Administrator
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rBreakGlassAdministratorUser
+
+  rRoleStackSet:
+    Type: "AWS::CloudFormation::StackSet"
+    Properties:
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      Capabilities:
+        - CAPABILITY_IAM
+        - CAPABILITY_NAMED_IAM
+      Description: StackSet to deploy platform IAM roles to child accounts
+      # ExecutionRoleName not supported on SERVICE_MANAGED
+      OperationPreferences:
+        FailureToleranceCount: 1
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      Parameters:
+        - ParameterKey: pDeveloperPrefix
+          ParameterValue: !Ref pDeveloperPrefix
+        - ParameterKey: pCloudFormationRoleName
+          ParameterValue: !Ref pCloudFormationRoleName
+        - ParameterKey: pServiceCatalogRoleName
+          ParameterValue: !Ref pServiceCatalogRoleName
+        - ParameterKey: pBreakGlassAdminRoleName
+          ParameterValue: !Ref pBreakGlassAdminRoleName
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !GetAtt rOrganization.RootId
+          Regions:
+            - !Ref "AWS::Region" # single region only for the IAM roles
+      StackSetName: AWSPlatform-BASELINE-ROLES
+      TemplateURL: ./src/stackset_roles/template.yml
+  
+  rParameterStackSet:
+    Type: "AWS::CloudFormation::StackSet"
+    Properties:
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      Description: StackSet to deploy platform SSM parameters to child accounts
+      # ExecutionRoleName not supported on SERVICE_MANAGED
+      OperationPreferences:
+        FailureToleranceCount: 1
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      Parameters:
+        - ParameterKey: pOrganizationId
+          ParameterValue: !GetAtt rOrganization.Id
+        - ParameterKey: pCloudFormationRoleName
+          ParameterValue: !Ref pCloudFormationRoleName
+        - ParameterKey: pServiceCatalogRoleName
+          ParameterValue: !Ref pServiceCatalogRoleName
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !GetAtt rOrganization.RootId
+          Regions: !Ref pRegions
+      StackSetName: AWSPlatform-BASELINE-PARAMETERS
+      TemplateURL: ./src/stackset_parameters/template.yml
+  
+  rAccountManagerPermissionSet:
+    Type: "AWS::SSO::PermissionSet"
+    Condition: cHasInstanceArn
+    Properties:
+      Description: Access to Billing and Cost Explorer
+      InstanceArn: !Sub "arn:${AWS::Partition}:sso:::instance/${pSSOInstanceId}"
+      ManagedPolicies:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/job-function/Billing"
+      Name: AccountManager
+      RelayStateType: https://console.aws.amazon.com/billing/home
+      SessionDuration: PT8H
+
+  rDeveloperPermissionSet:
+    Type: "AWS::SSO::PermissionSet"
+    Condition: cHasInstanceArn
+    Properties:
+      Description: Access to provision resources through CloudFormation
+      InlinePolicy: !Sub |-
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "iam:PassRole",
+              "Resource": "arn:${AWS::Partition}:iam::*:role/${pCloudFormationRoleName}",
+              "Condition": {
+                "StringEquals": {
+                  "aws:ResourceAccount": "${!aws:PrincipalAccount}",
+                  "iam:PassedToService": "cloudformation.${AWS::URLSuffix}"
+                }
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "cloudformation:ContinueUpdateRollback",
+                "cloudformation:CreateChangeSet",
+                "cloudformation:CreateStack",
+                "cloudformation:DeleteStack",
+                "cloudformation:RollbackStack",
+                "cloudformation:UpdateStack"
+              ],
+              "Resource": "arn:${AWS::Partition}:cloudformation:*:*:stack/${pDeveloperPrefix}*",
+              "Condition": {
+                "ArnLike": {
+                  "cloudformation:RoleArn": "arn:${AWS::Partition}:iam::${!aws:PrincipalAccount}:role/${pCloudFormationRoleName}"
+                },
+                "Null": {
+                  "cloudformation:ImportResourceTypes": true
+                }
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "cloudformation:CancelUpdateStack",
+                "cloudformation:DeleteChangeSet",
+                "cloudformation:DetectStackDrift",
+                "cloudformation:DetectStackResourceDrift",
+                "cloudformation:ExecuteChangeSet",
+                "cloudformation:TagResource",
+                "cloudformation:UntagResource",
+                "cloudformation:UpdateTerminationProtection"
+              ],
+              "Resource": "arn:${AWS::Partition}:cloudformation:*:*:stack/${pDeveloperPrefix}*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "cloudformation:CreateUploadBucket",
+                "cloudformation:ValidateTemplate",
+                "cloudformation:EstimateTemplateCost"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": "s3:CreateBucket",
+              "Resource": "arn:${AWS::Partition}:s3:::cf-templates-*",
+              "Condition": {
+                "ForAnyValue:StringEquals": {
+                  "aws:CalledVia": "cloudformation.${AWS::URLSuffix}"
+                }
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": "s3:PutObject",
+              "Resource": "arn:${AWS::Partition}:s3:::cf-templates-*/*",
+              "Condition": {
+                "StringEquals": {
+                  "s3:ResourceAccount": "${!aws:PrincipalAccount}"
+                }
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": "ssm:StartSession",
+              "Resource": [
+                "arn:${AWS::Partition}:ec2:*:*:instance/*",
+                "arn:${AWS::Partition}:ssm:*:*:document/SSM-SessionManagerRunShell",
+                "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartSSHSession",
+                "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartPortForwardingSession",
+                "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartPortForwardingSessionToRemoteHost"
+              ],
+              "Condition": {
+                "BoolIfExists": {
+                  "ssm:SessionDocumentAccessCheck": "true"
+                },
+                "StringEquals": {
+                  "aws:ResourceAccount": "${!aws:PrincipalAccount}"
+                }
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": "ssm:TerminateSession",
+              "Resource": "arn:${AWS::Partition}:ssm:*:*:session/*",
+              "Condition": {
+                "StringLike": {
+                  "ssm:resourceTag/aws:ssmmessages:session-id": "${!aws:userid}"
+                }
+              }
+            }            
+          ]
+        }
+      InstanceArn: !Sub "arn:${AWS::Partition}:sso:::instance/${pSSOInstanceId}"
+      ManagedPolicies:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSServiceCatalogEndUserFullAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSBillingReadOnlyAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSSupportAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/job-function/ViewOnlyAccess"
+      Name: Developer
+      SessionDuration: PT8H
+  
+  rSupportPermissionSet:
+    Type: "AWS::SSO::PermissionSet"
+    Condition: cHasInstanceArn
+    Properties:
+      Description: Access to production accounts
+      InlinePolicy: !Sub |-
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "iam:PassRole",
+              "Resource": "arn:${AWS::Partition}:iam::*:role/${pCloudFormationRoleName}",
+              "Condition": {
+                "StringEquals": {
+                  "aws:ResourceAccount": "${!aws:PrincipalAccount}",
+                  "iam:PassedToService": "cloudformation.${AWS::URLSuffix}"
+                }
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": "cloudformation:ContinueUpdateRollback",
+              "Resource": "arn:${AWS::Partition}:cloudformation:*:*:stack/${pDeveloperPrefix}*",
+              "Condition": {
+                "ArnLike": {
+                  "cloudformation:RoleArn": "arn:${AWS::Partition}:iam::${!aws:PrincipalAccount}:role/${pCloudFormationRoleName}"
+                },
+                "Null": {
+                  "cloudformation:ImportResourceTypes": true
+                }
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": "cloudformation:CancelUpdateStack",
+              "Resource": "arn:${AWS::Partition}:cloudformation:*:*:stack/${pDeveloperPrefix}*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": "ssm:StartSession",
+              "Resource": [
+                "arn:${AWS::Partition}:ec2:*:*:instance/*",
+                "arn:${AWS::Partition}:ssm:*:*:document/SSM-SessionManagerRunShell",
+                "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartSSHSession",
+                "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartPortForwardingSession",
+                "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartPortForwardingSessionToRemoteHost"
+              ],
+              "Condition": {
+                "BoolIfExists": {
+                  "ssm:SessionDocumentAccessCheck": "true"
+                },
+                "StringEquals": {
+                  "aws:ResourceAccount": "${!aws:PrincipalAccount}"
+                }
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": "ssm:TerminateSession",
+              "Resource": "arn:${AWS::Partition}:ssm:*:*:session/*",
+              "Condition": {
+                "StringLike": {
+                  "ssm:resourceTag/aws:ssmmessages:session-id": "${!aws:userid}"
+                }
+              }
+            }            
+          ]
+        }
+      InstanceArn: !Sub "arn:${AWS::Partition}:sso:::instance/${pSSOInstanceId}"
+      ManagedPolicies:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSBillingReadOnlyAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSSupportAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/job-function/ViewOnlyAccess"
+      Name: Support
+      SessionDuration: PT2H
