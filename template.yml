@@ -146,19 +146,43 @@ Resources:
       Name: Prod
       ParentId: !Ref rWorkloadsOu
 
-  rBreakGlassRoleAssumePolicy:
+  rEmergencyAccessGroup:
+    Type: "AWS::IAM::Group"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "Ignoring explicit group name"
+    Properties:
+      GroupName: EmergencyAccess
+
+  rEmergencyAccessOpsUser:
+    Type: "AWS::IAM::User"
+    Properties:
+      Groups:
+        - !Ref rEmergencyAccessGroup
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rEmergencyAccessOpsUser
+      UserName: EmergencyAccess_Ops
+  
+  rEmergencyAccessOpsPolicy:
     Type: "AWS::IAM::UserPolicy"
     Properties:
-      PolicyName: BreakGlassRoleAssumePolicy
+      PolicyName: EmergencyAccessOpsPolicy
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Action: "sts:AssumeRole"
-            Resource: !Sub "arn:${AWS::Partition}:iam::*:role/${pBreakGlassAdminRoleName}"
-      UserName: !Ref rBreakGlassAdministratorUser
+            Resource: !Sub "arn:${AWS::Partition}:iam::*:role/EmergencyAccess_Ops"
+      UserName: !Ref rEmergencyAccessOpsUser
 
-  rBreakGlassAdministratorUser:
+  rEmergencyAccessReadOnlyUser:
     Type: "AWS::IAM::User"
     Metadata:
       cfn_nag:
@@ -166,14 +190,28 @@ Resources:
           - id: F2000
             reason: "Ignoring no groups"
     Properties:
-      UserName: Administrator
+      Groups:
+        - !Ref rEmergencyAccessGroup
       Tags:
         - Key: "aws-cloudformation:stack-name"
           Value: !Ref "AWS::StackName"
         - Key: "aws-cloudformation:stack-id"
           Value: !Ref "AWS::StackId"
         - Key: "aws-cloudformation:logical-id"
-          Value: rBreakGlassAdministratorUser
+          Value: rEmergencyAccessReadOnlyUser
+      UserName: EmergencyAccess_RO
+
+  rEmergencyAccessReadOnlyPolicy:
+    Type: "AWS::IAM::UserPolicy"
+    Properties:
+      PolicyName: EmergencyAccessReadOnlyPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "sts:AssumeRole"
+            Resource: !Sub "arn:${AWS::Partition}:iam::*:role/EmergencyAccess_RO"
+      UserName: !Ref rEmergencyAccessReadOnlyUser
 
   rRoleStackSet:
     Type: "AWS::CloudFormation::StackSet"

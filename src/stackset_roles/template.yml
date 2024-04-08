@@ -34,16 +34,9 @@ Parameters:
     ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
     AllowedPattern: "[a-zA-Z0-9]+"
     MinLength: 1
-  pBreakGlassAdminRoleName:
-    Type: String
-    Description: Break Glass admin role name
-    Default: BreakGlassAdministratorRole
-    ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
-    AllowedPattern: "[a-zA-Z0-9]+"
-    MinLength: 1
 
 Resources:
-  rBreakGlassAdminRole:
+  rEmergencyAccessOpsRole:
     Type: "AWS::IAM::Role"
     Metadata:
       cfn_nag:
@@ -56,22 +49,46 @@ Resources:
         Statement:
           Effect: Allow
           Principal:
-            AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:user/Administrator"
+            AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:user/EmergencyAccess_Ops"
           Action: "sts:AssumeRole"
-          Condition:
-            StringEquals:
-              "aws:SourceAccount": !Ref "AWS::AccountId"
-      Description: !Sub "DO NOT DELETE - Used by break glass administrators. Created by CloudFormation ${AWS::StackId}"        
+      Description: !Sub "DO NOT DELETE - Used for emergency access. Created by CloudFormation ${AWS::StackId}"        
       ManagedPolicyArns:
-        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"
-      RoleName: !Ref pBreakGlassAdminRoleName
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/job-function/SystemAdministrator"
+      RoleName: EmergencyAccess_Ops
       Tags:
         - Key: "aws-cloudformation:stack-name"
           Value: !Ref "AWS::StackName"
         - Key: "aws-cloudformation:stack-id"
           Value: !Ref "AWS::StackId"
         - Key: "aws-cloudformation:logical-id"
-          Value: rBreakGlassAdminRole
+          Value: rEmergencyAccessOpsRole
+    
+  rEmergencyAccessReadOnlyRole:
+    Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "Ignoring explicit role name"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:user/EmergencyAccess_RO"
+          Action: "sts:AssumeRole"
+      Description: !Sub "DO NOT DELETE - Used for emergency access (read-only). Created by CloudFormation ${AWS::StackId}"        
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/ReadOnlyAccess"
+      RoleName: EmergencyAccess_RO
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rEmergencyAccessReadOnlyRole
 
   rServiceCatalogRole:
     Type: "AWS::IAM::Role"
