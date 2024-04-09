@@ -39,7 +39,6 @@ This repository contains a collection of [AWS CloudFormation](https://aws.amazon
 | pDeveloperPrefix         | String | app | Prefix used by developers when creating IAM roles and CloudFormation stacks |
 | pCloudFormationRoleName  | String | CloudFormationRole | Name of the IAM role used by AWS CloudFormation |
 | pServiceCatalogRoleName  | String | ServiceCatalogRole | Name of the IAM role used by AWS Service Catalog |
-| pBreakGlassAdminRoleName | String | BreakGlassAdministratorRole | Name of the IAM role used by administrators in the event of an emergency |
 | pRegions                 | String | us-east-1 | Comma-delimited list of AWS Regions |
 | pSandboxOuName           | String | Sandbox | Name of the organizational unit for sandbox AWS accounts |
 | pSecurityOuName          | String | Security_Prod | Name of the organizational unit for security-related AWS accounts |
@@ -58,6 +57,12 @@ sam deploy \
 ```
 
 ## Use Cases
+
+#### Emergency Access
+
+In the event that there are any issues with AWS IAM Identity Center, an `EmergencyAccess_RO` and `EmergencyAccess_Ops` users have been deployed in the management account. These users can assume IAM roles `EmergencyAccess_Ops` and `EmergencyAccess_RO` in every account. These users thus have privileged access to all accounts which necessitates that they be used sparingly in a secure manner.
+
+There are no credentials associated with these users. To set credentials, and enable multi-factor authentication for these users, follow these [instructions](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable.html) to configure MFA devices for each EmergencyAccess user.
 
 #### To Access an EC2 Instance
 

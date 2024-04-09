@@ -32,13 +32,6 @@ Parameters:
     ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
     AllowedPattern: "[a-zA-Z0-9]+"
     MinLength: 1
-  pBreakGlassAdminRoleName:
-    Type: String
-    Description: Break Glass admin role name
-    Default: BreakGlassAdministratorRole
-    ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
-    AllowedPattern: "[a-zA-Z0-9]+"
-    MinLength: 1
   pRegions:
     Type: CommaDelimitedList
     Description: Comma-delimited list of regions to deploy the stacksets
@@ -235,8 +228,6 @@ Resources:
           ParameterValue: !Ref pCloudFormationRoleName
         - ParameterKey: pServiceCatalogRoleName
           ParameterValue: !Ref pServiceCatalogRoleName
-        - ParameterKey: pBreakGlassAdminRoleName
-          ParameterValue: !Ref pBreakGlassAdminRoleName
       PermissionModel: SERVICE_MANAGED
       StackInstancesGroup:
         - DeploymentTargets:
