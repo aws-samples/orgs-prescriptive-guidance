@@ -340,10 +340,10 @@ Resources:
         - !Ref "AWS::NoValue"
 
   rControlTowerLandingZone:
-    DependsOn:
-       - rSecurityAccountWaiter
-       - rLogArchiveAccountWaiter
     Type: "AWS::ControlTower::LandingZone"
+    DependsOn:
+      - rSecurityAccountWaiter
+      - rLogArchiveAccountWaiter
     Properties:
       Version: !Ref pVersion
       Manifest:
@@ -354,7 +354,10 @@ Resources:
           sandbox:
             name: !Ref pSandboxOuName
         centralizedLogging:
-          accountId: !If [cDeployNewLogArchiveAccount, !Ref rLoggingAccount, !Ref pImportedLogArchiveAccountId ]
+          accountId: !If
+            - cDeployNewLogArchiveAccount
+            - !Ref rLoggingAccount
+            - !Ref pImportedLogArchiveAccountId
           configurations:
             loggingBucket:
               retentionDays: !Ref pLoggingBucketRetentionPeriod
@@ -362,7 +365,10 @@ Resources:
               retentionDays: !Ref pAccessLoggingBucketRetentionPeriod
           enabled: true
         securityRoles: # specify your Audit/Security Tooling account
-          accountId: !If [cDeployNewSecurityAccount, !Ref rSecurityAccount, !Ref pImportedSecurityAccountId ]
+          accountId: !If
+            - cDeployNewSecurityAccount
+            - !Ref rSecurityAccount
+            - !Ref pImportedSecurityAccountId
         accessManagement: # enable identity center or not
           enabled: true
 
