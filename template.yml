@@ -51,8 +51,8 @@ Conditions:
 Resources:
   rOrganization:
     Type: "AWS::Organizations::Organization"
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       FeatureSet: ALL
 
@@ -62,37 +62,37 @@ Resources:
       Content:
         Version: "2012-10-17"
         Statement:
-          - Sid: AllowDescribeOrganizationFromAccount
-            Effect: Allow
-            Principal:
-              AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
-            Action: "organizations:DescribeOrganization"
-            Resource: "*"
-          - Sid: AllowDescribeOrganizationFromOrg
+          - Sid: DelegatingDescribeListActions
             Effect: Allow
             Principal: "*"
-            Action: "organizations:DescribeOrganization"
+            Action:
+              - "organizations:List*"
+              - "organizations:Describe*"
             Resource: "*"
             Condition:
               StringEquals:
                 "aws:PrincipalOrgID": !GetAtt rOrganization.Id
 
-  rSecurityPolicy:
+  rRootPolicy:
     Type: "AWS::Organizations::Policy"
+    DependsOn: rActivateCustomResource
     Properties:
       Content:
         Version: "2012-10-17"
         Statement:
-          - Effect: Deny
+          - Sid: DenyRootUserActions
+            Effect: Deny
             Action: "*"
             Resource: "*"
             Condition:
               StringLike:
                 "aws:PrincipalArn": !Sub "arn:${AWS::Partition}:iam::*:root"
-          - Effect: Deny
+          - Sid: DenyLeaveOrganization
+            Effect: Deny
             Action: "organizations:LeaveOrganization"
             Resource: "*"
-      Name: aws-platform-security
+      Description: Deny Root User Actions and Leaving Organization
+      Name: RootPolicy
       TargetIds:
         - !GetAtt rOrganization.RootId
       Type: SERVICE_CONTROL_POLICY
@@ -206,8 +206,228 @@ Resources:
             Resource: !Sub "arn:${AWS::Partition}:iam::*:role/EmergencyAccess_RO"
       UserName: !Ref rEmergencyAccessReadOnlyUser
 
+  rFunctionLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W84
+            reason: "Ignoring KMS key"
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${rFunction}"
+      RetentionInDays: 3
+
+  rFunctionRole:
+    Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "Ignoring wildcard policy"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: !Sub "lambda.${AWS::URLSuffix}"
+          Action: "sts:AssumeRole"
+          Condition:
+            StringEquals:
+              "aws:SourceAccount": !Ref "AWS::AccountId"
+      Description: !Sub "DO NOT DELETE - Used by Lambda. Created by CloudFormation ${AWS::StackId}"
+      Policies:
+        - PolicyName: OrganizationAccessPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "cloudformation:ActivateOrganizationsAccess"
+                  - "cloudformation:DeactivateOrganizationsAccess"
+                  - "cloudformation:DescribeOrganizationsAccess"
+                  - "organizations:ListRoots"
+                  - "organizations:EnablePolicyType"
+                  - "organizations:DisablePolicyType"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "iam:GetRole"
+                  - "iam:DeleteServiceLinkedRole"
+                  - "iam:GetServiceLinkedRoleDeletionStatus"
+                Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/stacksets.cloudformation.amazonaws.com/AWSServiceRoleForCloudFormationStackSetsOrgAdmin*"
+              - Effect: Allow
+                Action:
+                  - "organizations:EnableAWSServiceAccess"
+                  - "organizations:DisableAWSServiceAccess"
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    "organizations:ServicePrincipal": "member.org.stacksets.cloudformation.amazonaws.com"
+              - Effect: Allow
+                Action: "iam:CreateServiceLinkedRole"
+                Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/stacksets.cloudformation.amazonaws.com/AWSServiceRoleForCloudFormationStackSetsOrgAdmin*"
+                #Condition:
+                #  StringLike:
+                #    "iam:AWSServiceName": "stacksets.cloudformation.amazonaws.com"
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rFunctionRole
+
+  rCloudWatchLogsPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: CloudWatchLogs
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            Resource: !GetAtt rFunctionLogGroup.Arn
+      Roles:
+        - !Ref rFunctionRole
+
+  rFunction:
+    Type: "AWS::Serverless::Function"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: "Ignoring CloudWatch"
+          - id: W89
+            reason: "Ignoring VPC"
+          - id: W92
+            reason: "Ignoring Reserved Concurrency"
+    Properties:
+      Architectures:
+        - arm64
+      Description: !Sub "${AWS::StackName} Function"
+      Environment:
+        Variables:
+          ROOT_ID: !GetAtt rOrganization.RootId
+      Handler: "index.handler"
+      InlineCode: |-
+        import os
+        import boto3
+        import cfnresponse
+
+        cloudformation = boto3.client("cloudformation")
+        organizations = boto3.client("organizations", region_name="us-east-1")
+        root_id = os.getenv("ROOT_ID")
+
+        policy_types = {"SERVICE_CONTROL_POLICY", "TAG_POLICY", "BACKUP_POLICY", "AISERVICES_OPT_OUT_POLICY"}
+
+        def handler(event, context):
+          print(event)
+          response_data = {}
+          response_status = None
+
+          response = cloudformation.describe_organizations_access(CallAs="SELF")
+          status = response.get("Status")
+          print("Organizations Access Status: ", status)
+
+          try:
+            if event["RequestType"] == "Create":
+              if status == "ACTIVE":
+                print("Organizations access is already active")
+              else:
+                print("Activating organizations access...")
+                cloudformation.activate_organizations_access()
+                print("Successfully activated organizations access")
+
+              for policy_type in policy_types:
+                print(f"Enabling {policy_type} policy type...")
+                try:
+                  organizations.enable_policy_type(RootId=root_id, PolicyType=policy_type)
+                except organizations.exceptions.PolicyTypeAlreadyEnabledException:
+                  pass
+                print(f"Enabled {policy_type} policy type")
+            elif event["RequestType"] == "Delete":
+              if status == "DISABLED":
+                print("Organizations access is already disabled")
+              else:
+                print("Deactivating organizations access...")
+                cloudformation.deactivate_organizations_access()
+                print("Successfully deactivated organizations access")
+              
+              for policy_type in policy_types:
+                print(f"Disabling {policy_type} policy type...")
+                try:
+                  organizations.disable_policy_type(RootId=root_id, PolicyType=policy_type)
+                except organizations.exceptions.PolicyTypeNotEnabledException:
+                  pass
+                print(f"Disabled {policy_type} policy type")
+          except Exception as ex:
+            print("Request Failed: ", ex)
+            response_status = cfnresponse.FAILED
+          else:
+            response_status = cfnresponse.SUCCESS
+          finally:
+            cfnresponse.send(event, context, response_status, response_data)
+      MemorySize: 256  # megabytes
+      PropagateTags: true
+      Role: !GetAtt rFunctionRole.Arn
+      Runtime: python3.12
+      Timeout: 10  # seconds
+
+  rActivateCustomResource:
+    Type: "AWS::CloudFormation::CustomResource"
+    DependsOn:
+      - rOrganization
+      - rCloudWatchLogsPolicy
+    Properties:
+      ServiceTimeout: 15  # seconds
+      ServiceToken: !GetAtt rFunction.Arn
+
+  rCloudFormationStackSetAdminRole:
+    Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "Ignoring explicit role name"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "cloudformation.amazonaws.com"
+            Action: "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                "aws:SourceAccount": !Ref "AWS::AccountId"
+              ArnLike:
+                "aws:SourceArn": !Sub "arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stackset/*"
+      Description: !Sub "DO NOT DELETE - Used by CloudFormation StackSets. Created by CloudFormation ${AWS::StackId}"
+      Policies:
+        - PolicyName: StackSetAdministration
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: "sts:AssumeRole"
+                Resource: !Sub "arn:${AWS::Partition}:iam::*:role/AWSCloudFormationStackSetExecutionRole"
+      RoleName: AWSCloudFormationStackSetAdministrationRole
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rCloudFormationStackSetAdminRole
+
   rRoleStackSet:
     Type: "AWS::CloudFormation::StackSet"
+    DependsOn: rActivateCustomResource
     Properties:
       AutoDeployment:
         Enabled: true
@@ -222,6 +442,8 @@ Resources:
         MaxConcurrentPercentage: 100
         RegionConcurrencyType: PARALLEL
       Parameters:
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref "AWS::AccountId"
         - ParameterKey: pDeveloperPrefix
           ParameterValue: !Ref pDeveloperPrefix
         - ParameterKey: pCloudFormationRoleName
@@ -240,6 +462,7 @@ Resources:
   
   rParameterStackSet:
     Type: "AWS::CloudFormation::StackSet"
+    DependsOn: rActivateCustomResource
     Properties:
       AutoDeployment:
         Enabled: true
@@ -251,6 +474,8 @@ Resources:
         MaxConcurrentPercentage: 100
         RegionConcurrencyType: PARALLEL
       Parameters:
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref "AWS::AccountId"
         - ParameterKey: pOrganizationId
           ParameterValue: !GetAtt rOrganization.Id
         - ParameterKey: pCloudFormationRoleName
