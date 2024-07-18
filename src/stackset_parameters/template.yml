@@ -6,9 +6,16 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Organization reference architecture for SMB - Systems Manager Parameters
 
 Parameters:
+  pManagementAccountId:
+    Type: String
+    Description: AWS Account ID for Management Account
+    ConstraintDescription: "must only contain numbers"
+    AllowedPattern: "^[0-9]{12}$"
   pOrganizationId:
     Type: String
     Description: Organization ID
+    ConstraintDescription: "must only contain lowercase letters and numbers"
+    AllowedPattern: "^o\\-[a-z0-9]+"
   pCloudFormationRoleName:
     Type: String
     Description: CloudFormation IAM role name
@@ -23,6 +30,16 @@ Parameters:
     AllowedPattern: "[a-zA-Z0-9]+"
 
 Resources:
+  ManagementIdParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      DataType: text
+      Description: Management AWS Account ID
+      Name: /platform/org/ManagementAccountId
+      Tier: Standard
+      Type: String
+      Value: !Ref pManagementAccountId
+
   OrganizationIdParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
