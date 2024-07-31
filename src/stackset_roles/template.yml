@@ -54,7 +54,7 @@ Resources:
         Statement:
           Effect: Allow
           Principal:
-            AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:user/EmergencyAccess_Ops"
+            AWS: !Sub "arn:${AWS::Partition}:iam::${pManagementAccountId}:user/EmergencyAccess_Ops"
           Action: "sts:AssumeRole"
       Description: !Sub "DO NOT DELETE - Used for emergency access. Created by CloudFormation ${AWS::StackId}"        
       ManagedPolicyArns:
@@ -81,7 +81,7 @@ Resources:
         Statement:
           Effect: Allow
           Principal:
-            AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:user/EmergencyAccess_RO"
+            AWS: !Sub "arn:${AWS::Partition}:iam::${pManagementAccountId}:user/EmergencyAccess_RO"
           Action: "sts:AssumeRole"
       Description: !Sub "DO NOT DELETE - Used for emergency access (read-only). Created by CloudFormation ${AWS::StackId}"        
       ManagedPolicyArns:

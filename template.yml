@@ -316,6 +316,7 @@ Resources:
       Handler: "index.handler"
       InlineCode: |-
         import os
+        import time
         import boto3
         import cfnresponse
 
@@ -345,10 +346,15 @@ Resources:
 
               for policy_type in policy_types:
                 print(f"Enabling {policy_type} policy type...")
-                try:
-                  organizations.enable_policy_type(RootId=root_id, PolicyType=policy_type)
-                except organizations.exceptions.PolicyTypeAlreadyEnabledException:
-                  pass
+                while True:
+                  try:
+                    organizations.enable_policy_type(RootId=root_id, PolicyType=policy_type)
+                  except organizations.exceptions.PolicyTypeAlreadyEnabledException:
+                    break
+                  except organizations.exceptions.ConcurrentModificationException:
+                    time.sleep(.1)
+                  else:
+                    break
                 print(f"Enabled {policy_type} policy type")
             elif event["RequestType"] == "Delete":
               if status == "DISABLED":
@@ -360,10 +366,15 @@ Resources:
               
               for policy_type in policy_types:
                 print(f"Disabling {policy_type} policy type...")
-                try:
-                  organizations.disable_policy_type(RootId=root_id, PolicyType=policy_type)
-                except organizations.exceptions.PolicyTypeNotEnabledException:
-                  pass
+                while True:
+                  try:
+                    organizations.disable_policy_type(RootId=root_id, PolicyType=policy_type)
+                  except organizations.exceptions.PolicyTypeNotEnabledException:
+                    break
+                  except organizations.exceptions.ConcurrentModificationException:
+                    time.sleep(.1)
+                  else:
+                    break
                 print(f"Disabled {policy_type} policy type")
           except Exception as ex:
             print("Request Failed: ", ex)
@@ -376,7 +387,7 @@ Resources:
       PropagateTags: true
       Role: !GetAtt rFunctionRole.Arn
       Runtime: python3.12
-      Timeout: 10  # seconds
+      Timeout: 20  # seconds
 
   rActivateCustomResource:
     Type: "AWS::CloudFormation::CustomResource"
@@ -614,7 +625,7 @@ Resources:
                   "ssm:resourceTag/aws:ssmmessages:session-id": "${!aws:userid}"
                 }
               }
-            }            
+            }
           ]
         }
       InstanceArn: !Sub "arn:${AWS::Partition}:sso:::instance/${pSSOInstanceId}"
