@@ -135,7 +135,7 @@ def delete(event: dict, context: LambdaContext):
     logger.debug("Disabling organizations root sessions...")
     iam.disable_organizations_root_sessions()
     logger.info("Disabled organizations root sessions")
-    
+
     logger.debug("Disabling organizations root credentials management...")
     iam.disable_organizations_root_credentials_management()
     logger.info("Disabled organizations root credentials management")
