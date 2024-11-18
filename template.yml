@@ -248,6 +248,10 @@ Resources:
                   - "cloudformation:ActivateOrganizationsAccess"
                   - "cloudformation:DeactivateOrganizationsAccess"
                   - "cloudformation:DescribeOrganizationsAccess"
+                  - "iam:DisableOrganizationsRootCredentialsManagement"
+                  - "iam:DisableOrganizationsRootSessions"
+                  - "iam:EnableOrganizationsRootCredentialsManagement"
+                  - "iam:EnableOrganizationsRootSessions"
                   - "organizations:ListRoots"
                   - "organizations:EnablePolicyType"
                   - "organizations:DisablePolicyType"
@@ -259,13 +263,18 @@ Resources:
                   - "iam:GetServiceLinkedRoleDeletionStatus"
                 Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/stacksets.cloudformation.amazonaws.com/AWSServiceRoleForCloudFormationStackSetsOrgAdmin*"
               - Effect: Allow
+                Action: "iam:GetRole"
+                Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*AWSServiceRoleForCloudFormationStackSetsOrgAdmin*"
+              - Effect: Allow
                 Action:
                   - "organizations:EnableAWSServiceAccess"
                   - "organizations:DisableAWSServiceAccess"
                 Resource: "*"
                 Condition:
                   StringEquals:
-                    "organizations:ServicePrincipal": "member.org.stacksets.cloudformation.amazonaws.com"
+                    "organizations:ServicePrincipal":
+                      - "member.org.stacksets.cloudformation.amazonaws.com"
+                      - "iam.amazonaws.com"
               - Effect: Allow
                 Action: "iam:CreateServiceLinkedRole"
                 Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/stacksets.cloudformation.amazonaws.com/AWSServiceRoleForCloudFormationStackSetsOrgAdmin*"
@@ -309,84 +318,16 @@ Resources:
     Properties:
       Architectures:
         - arm64
-      Description: !Sub "${AWS::StackName} Function"
+      CodeUri: ./src/activation_lambda
+      Description: !Sub "${AWS::StackName} Activation Function"
       Environment:
         Variables:
           ROOT_ID: !GetAtt rOrganization.RootId
-      Handler: "index.handler"
-      InlineCode: |-
-        import os
-        import time
-        import boto3
-        import cfnresponse
-
-        cloudformation = boto3.client("cloudformation")
-        organizations = boto3.client("organizations", region_name="us-east-1")
-        root_id = os.getenv("ROOT_ID")
-
-        policy_types = {"SERVICE_CONTROL_POLICY", "TAG_POLICY", "BACKUP_POLICY", "AISERVICES_OPT_OUT_POLICY"}
-
-        def handler(event, context):
-          print(event)
-          response_data = {}
-          response_status = None
-
-          response = cloudformation.describe_organizations_access(CallAs="SELF")
-          status = response.get("Status")
-          print("Organizations Access Status: ", status)
-
-          try:
-            if event["RequestType"] == "Create":
-              if status == "ACTIVE":
-                print("Organizations access is already active")
-              else:
-                print("Activating organizations access...")
-                cloudformation.activate_organizations_access()
-                print("Successfully activated organizations access")
-
-              for policy_type in policy_types:
-                print(f"Enabling {policy_type} policy type...")
-                while True:
-                  try:
-                    organizations.enable_policy_type(RootId=root_id, PolicyType=policy_type)
-                  except organizations.exceptions.PolicyTypeAlreadyEnabledException:
-                    break
-                  except organizations.exceptions.ConcurrentModificationException:
-                    time.sleep(.1)
-                  else:
-                    break
-                print(f"Enabled {policy_type} policy type")
-            elif event["RequestType"] == "Delete":
-              if status == "DISABLED":
-                print("Organizations access is already disabled")
-              else:
-                print("Deactivating organizations access...")
-                cloudformation.deactivate_organizations_access()
-                print("Successfully deactivated organizations access")
-              
-              for policy_type in policy_types:
-                print(f"Disabling {policy_type} policy type...")
-                while True:
-                  try:
-                    organizations.disable_policy_type(RootId=root_id, PolicyType=policy_type)
-                  except organizations.exceptions.PolicyTypeNotEnabledException:
-                    break
-                  except organizations.exceptions.ConcurrentModificationException:
-                    time.sleep(.1)
-                  else:
-                    break
-                print(f"Disabled {policy_type} policy type")
-          except Exception as ex:
-            print("Request Failed: ", ex)
-            response_status = cfnresponse.FAILED
-          else:
-            response_status = cfnresponse.SUCCESS
-          finally:
-            cfnresponse.send(event, context, response_status, response_data)
-      MemorySize: 256  # megabytes
+      Handler: index.handler
+      MemorySize: 1024  # megabytes
       PropagateTags: true
       Role: !GetAtt rFunctionRole.Arn
-      Runtime: python3.12
+      Runtime: python3.13
       Timeout: 20  # seconds
 
   rActivateCustomResource:
