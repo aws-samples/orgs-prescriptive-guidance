@@ -72,7 +72,7 @@ def create(event: dict, context: LambdaContext):
     logger.info("Organizations Access Status: " + status)
 
     if status == "ACTIVE":
-        logger.warn("Organizations access is already active")
+        logger.warning("Organizations access is already active")
     else:
         logger.debug("Activating organizations access...")
         cloudformation.activate_organizations_access()
@@ -111,7 +111,7 @@ def delete(event: dict, context: LambdaContext):
     logger.info("Organizations Access Status: " + status)
 
     if status == "DISABLED":
-        logger.warn("Organizations access is already disabled")
+        logger.warning("Organizations access is already disabled")
     else:
         logger.debug("Deactivating organizations access...")
         cloudformation.deactivate_organizations_access()
