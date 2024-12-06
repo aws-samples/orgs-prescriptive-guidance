@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   enforce_pinned_workflows:
-    if: github.repository_owner == "aws-samples"
+    if: github.repository_owner == 'aws-samples'
     name: Harden Security
     runs-on: ubuntu-latest
     permissions:
