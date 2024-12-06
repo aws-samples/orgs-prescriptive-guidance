@@ -185,6 +185,96 @@ Resources:
         - !GetAtt rOrganization.RootId
       Type: RESOURCE_CONTROL_POLICY
 
+  rRootDeclarativePolicy:
+    Type: "AWS::Organizations::Policy"
+    DependsOn: rActivateCustomResource
+    Properties:
+      Content: |-
+        {
+            "allowed_images_settings": {
+                "exception_message": {
+                    "@@assign": "Only Amazon, AWS Marketplace or AWS Backup Voult images are allowed"
+                },
+                "state": {
+                    "@@assign": "enabled"
+                },
+                "image_criteria": {
+                    "criteria_1": {
+                        "allowed_image_providers": {
+                            "@@append": [
+                                "amazon",
+                                "aws_marketplace",
+                                "aws_backup_vault"
+                            ]
+                        }
+                    }
+                }
+            },
+            "image_block_public_access": {
+                "exception_message": {
+                    "@@assign": "AMIs are not publicly sharable"
+                },
+                "state": {
+                    "@@assign": "block_new_sharing"
+                }
+            },
+            "instance_metadata_defaults": {
+                "http_tokens": {
+                    "@@assign": "required"
+                },
+                "http_put_response_hop_limit": {
+                    "@@assign": "2"
+                },
+                "http_endpoint": {
+                    "@@assign": "enabled"
+                },
+                "instance_metadata_tags": {
+                    "@@assign": "enabled"
+                }
+            },
+            "serial_console_access": {
+                "exception_message": {
+                    "@@assign": "Serial Console access is not allowed"
+                },
+                "status": {
+                    "@@assign": "disabled"
+                }
+            },
+            "snapshot_block_public_access": {
+                "exception_message": {
+                    "@@assign": "EBS snapshot cannot be shared publicly"
+                },
+                "state": {
+                    "@@assign": "block_all_sharing"
+                }
+            },
+            "vpc_block_public_access": {
+                "exception_message": {
+                    "@@assign": "Internet access is not allowed"
+                },
+                "internet_gateway": {
+                    "mode": {
+                        "@assign": "off"
+                    },
+                    "exclusions_allowed": {
+                        "@assign": "enabled"
+                    }
+                }
+            }
+        }
+      Description: Enforce identity perimeter
+      Name: RootPolicy
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rRootDeclarativePolicy
+      TargetIds:
+        - !GetAtt rOrganization.RootId
+      Type: DECLARATIVE_POLICY_EC2
+
   rExceptionsOu:
     Type: "AWS::Organizations::OrganizationalUnit"
     Properties:
