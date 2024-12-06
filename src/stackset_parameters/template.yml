@@ -35,7 +35,7 @@ Resources:
     Properties:
       DataType: text
       Description: Management AWS Account ID
-      Name: /platform/org/ManagementAccountId
+      Name: /org/core/accounts/management
       Tier: Standard
       Type: String
       Value: !Ref pManagementAccountId
@@ -45,7 +45,7 @@ Resources:
     Properties:
       DataType: text
       Description: Organization ID
-      Name: /platform/org/OrganizationId
+      Name: /org/core/organization-id
       Tier: Standard
       Type: String
       Value: !Ref pOrganizationId
