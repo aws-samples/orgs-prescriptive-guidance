@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     branches:
-      - main
+      - jp-rcp
   pull_request:
     branches:
-      - main
+      - jp-rcp
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
