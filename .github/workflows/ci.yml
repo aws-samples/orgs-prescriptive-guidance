@@ -14,7 +14,7 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  SAM_CLI_TELEMETRY: "0"
+  SAM_CLI_TELEMETRY: '0'
 
 permissions:
   id-token: write
@@ -26,6 +26,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+        with:
+          python-version: '3.13'
+          architecture: arm64
+          cache: pip
 
       - name: Setup AWS SAM
         uses: aws-actions/setup-sam@12a6719db503425e98edcc798b6779590a450e8f # v2
