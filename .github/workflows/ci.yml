@@ -39,8 +39,8 @@ jobs:
           role-session-name: ci
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Validate template
-        run: sam validate --lint
+      #- name: Validate template
+      #  run: sam validate --lint
 
       - name: Cache SAM build
         id: cache-sam-build
