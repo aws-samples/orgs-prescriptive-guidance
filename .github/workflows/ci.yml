@@ -56,7 +56,7 @@ jobs:
             ${{ runner.os }}-
 
       - name: Run sam build
-        run: sam build --use-container --cached --parallel
+        run: sam build --cached --parallel
 
       - name: Run sam deploy
         run: |
