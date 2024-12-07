@@ -1,0 +1,180 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Guidance for Organizations on AWS - GitHub Actions CI/CD
+
+Parameters:
+  pGithubOrganization:
+    Type: String
+    Description: GitHub Organization or User
+  pGitHubRepository:
+    Type: String
+    Description: GitHub Repository
+    Default: orgs-prescriptive-guidance
+
+Resources:
+  rCloudFormationRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: !Sub "cloudformation.${AWS::URLSuffix}"
+          Action: "sts:AssumeRole"
+          Condition:
+            StringEquals:
+              "aws:SourceAccount": !Ref "AWS::AccountId"
+      Description: !Sub "DO NOT DELETE - Used by CloudFormation. Created by CloudFormation ${AWS::StackId}"
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rCloudFormationRole
+
+  rGitHubRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Federated: !Ref rGitHubProvider
+          Action: "sts:AssumeRoleWithWebIdentity"
+          Condition:
+            StringEquals:
+              "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+            StringLike:
+              "token.actions.githubusercontent.com:sub": !Sub "repo:${pGithubOrganization}/${pGitHubRepository}:*"
+      Description: !Sub "DO NOT DELETE - Used by GitHub Actions. Created by CloudFormation ${AWS::StackId}"
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSCloudFormationReadOnlyAccess"
+      Policies:
+        - PolicyName: GitHubPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: "iam:PassRole"
+                Resource: !GetAtt rCloudFormationRole.Arn
+                Condition:
+                  StringEquals:
+                    "aws:ResourceAccount": "${aws:PrincipalAccount}"
+                    "iam:PassedToService": !Sub "cloudformation.${AWS::URLSuffix}"
+              - Effect: Allow
+                Action:
+                  - "cloudformation:ContinueUpdateRollback"
+                  - "cloudformation:CreateChangeSet"
+                  - "cloudformation:CreateStack"
+                  - "cloudformation:DeleteStack"
+                  - "cloudformation:RollbackStack"
+                  - "cloudformation:UpdateStack"
+                Resource: !Sub "arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stack/*"
+                Condition:
+                  ArnLike:
+                    "cloudformation:RoleArn": !GetAtt rCloudFormationRole.Arn
+                  "Null":
+                    "cloudformation:ImportResourceTypes": true
+              - Effect: Allow
+                Action:
+                  - "cloudformation:CancelUpdateStack"
+                  - "cloudformation:DeleteChangeSet"
+                  - "cloudformation:DetectStackDrift"
+                  - "cloudformation:DetectStackResourceDrift"
+                  - "cloudformation:ExecuteChangeSet"
+                  - "cloudformation:TagResource"
+                  - "cloudformation:UntagResource"
+                  - "cloudformation:UpdateTerminationProtection"
+                Resource: !Sub "arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stack/app-*"
+              - Effect: Allow
+                Action:
+                  - "cloudformation:ValidateTemplate"
+                  - "cloudformation:EstimateTemplateCost"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                  - "s3:GetObjectVersion"
+                  - "s3:PutObject"
+                Resource: !Sub "${rArtifactBucket.Arn}/*"
+              - Effect: Allow
+                Action:
+                  - "s3:ListBucket"
+                  - "s3:GetBucketPolicy"
+                  - "s3:GetBucketVersioning"
+                  - "s3:GetBucketLocation"
+                Resource: !GetAtt rArtifactBucket.Arn
+
+  rGitHubProvider:
+    Type: "AWS::IAM::OIDCProvider"
+    Properties:
+      ClientIdList:
+        - "sts.amazonaws.com"
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rGitHubProvider
+      Url: https://token.actions.githubusercontent.com
+
+  rArtifactBucket:
+    Type: "AWS::S3::Bucket"
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: RetainExceptOnCreate
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - ExpirationInDays: 30
+            Id: RetentionRule
+            Status: Enabled
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+
+  rArtifactBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref rArtifactBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "${rArtifactBucket.Arn}/*"
+              - !GetAtt rArtifactBucket.Arn
+            Condition:
+              Bool:
+                "aws:SecureTransport": false
+
+Outputs:
+  oCloudFormationRoleArn:
+    Description: CloudFormation IAM Role ARN
+    Value: !GetAtt rCloudFormationRole.Arn
+  oGitHubRoleArn:
+    Description: GitHub Actions IAM Role ARN
+    Value: !GetAtt rGitHubRole.Arn
+  oArtifactBucket:
+    Description: Artifact Bucket Name
+    Value: !Ref rArtifactBucket
