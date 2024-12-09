@@ -73,6 +73,7 @@ jobs:
             --no-confirm-changeset \
             --on-failure DELETE \
             --no-fail-on-empty-changeset \
+            --no-disable-rollback \
             --no-progressbar \
             --role-arn ${{ vars.CF_ROLE_ARN }} \
             --stack-name orgs-prescriptive-guidance \
