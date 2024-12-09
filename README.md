@@ -50,12 +50,12 @@ To deploy the template, you first need to install the [AWS Serverless Applicatio
 ```bash
 git clone https://github.com/aws-samples/orgs-prescriptive-guidance
 cd orgs-prescriptive-guidance
-aws cloudformation deploy \
+aws --region us-east-1 cloudformation deploy \
   --template-file github_ci_template.yml \
   --stack-name orgs-prescriptive-guidance-cicd \
   --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
 
-aws cloudformation describe-stacks --stack-name orgs-prescriptive-guidance-cicd --query "Stacks[0].Outputs"
+aws --region us-east-1 cloudformation describe-stacks --stack-name orgs-prescriptive-guidance-cicd --query "Stacks[0].Outputs"
 ```
 
 Then, follow this [guide](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#creating-configuration-variables-for-a-repository) to create these GitHub Action variables in the repository:
@@ -72,7 +72,7 @@ The variables should match the image below:
 
 #### Emergency Access
 
-In the event that there are any issues with AWS IAM Identity Center, an `EmergencyAccess_RO` and `EmergencyAccess_Ops` users have been deployed in the management account. These users can assume IAM roles `EmergencyAccess_Ops` and `EmergencyAccess_RO` in every account. These users thus have privileged access to all accounts which necessitates that they be used sparingly in a secure manner.
+In the event that there are any issues with AWS IAM Identity Center, IAM users `EmergencyAccess_RO` and `EmergencyAccess_Ops` have been deployed in the management account. These users can assume IAM roles `EmergencyAccess_RO` and `EmergencyAccess_Ops` in every account. These users thus have privileged access to all accounts which necessitates that they be used sparingly in a secure manner.
 
 There are no credentials associated with these users. To set credentials, and enable multi-factor authentication for these users, follow these [instructions](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable.html) to configure MFA devices for each EmergencyAccess user.
 
