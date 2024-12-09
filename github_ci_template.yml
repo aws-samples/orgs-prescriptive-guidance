@@ -28,8 +28,8 @@ Resources:
       Description: !Sub "DO NOT DELETE - Used by CloudFormation. Created by CloudFormation ${AWS::StackId}"
       ManagedPolicyArns:
         #- !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"
-        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSOrganizationsReadOnlyAccess"
-        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSCloudFormationReadOnlyAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSOrganizationsFullAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSCloudFormationFullAccess"
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/IAMReadOnlyAccess"
       Policies:
         - PolicyName: CloudFormationPolicy
@@ -37,16 +37,7 @@ Resources:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action: "cloudformation:CreateChangeSet"
-                Resource: !Sub "arn:${AWS::Partition}:cloudformation:*:aws:transform/Serverless-2016-10-31"
-              - Effect: Allow
                 Action:
-                  - "cloudformation:CreateStackSet"
-                  - "cloudformation:CreateStackInstances"
-                  - "cloudformation:DeleteStackInstances"
-                  - "cloudformation:DeleteStackSet"
-                  - "cloudformation:UpdateStackSet"
-                  - "cloudformation:TagResource"
                   - "iam:AddUserToGroup"
                   - "iam:CreateGroup"
                   - "iam:DeleteGroup"
@@ -82,18 +73,6 @@ Resources:
                   - "logs:CreateLogGroup"
                   - "logs:DeleteLogGroup"
                   - "logs:PutRetentionPolicy"
-                  - "organizations:CreateOrganization"
-                  - "organizations:CreateOrganizationalUnit"
-                  - "organizations:DeleteOrganizationalUnit"
-                  - "organizations:UpdateOrganizationalUnit"
-                  - "organizations:CreatePolicy"
-                  - "organizations:DeleteOrganization"
-                  - "organizations:DeleteResourcePolicy"
-                  - "organizations:AttachPolicy"
-                  - "organizations:DeletePolicy"
-                  - "organizations:DetachPolicy"
-                  - "organizations:UpdatePolicy"
-                  - "organizations:PutResourcePolicy"
                 Resource: "*"
               - Effect: Allow
                 Action: "s3:GetObject"
