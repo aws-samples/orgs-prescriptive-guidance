@@ -47,14 +47,24 @@ This repository contains a collection of [AWS CloudFormation](https://aws.amazon
 
 To deploy the template, you first need to install the [AWS Serverless Application Model](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) (AWS SAM).
 
-```
+```bash
 git clone https://github.com/aws-samples/orgs-prescriptive-guidance
 cd orgs-prescriptive-guidance
-sam build
-sam deploy \
-  --guided \
-  --tags "GITHUB_ORG=aws-samples GITHUB_REPO=orgs-prescriptive-guidance"
+aws cloudformation deploy \
+  --template-file github_ci_template.yml \
+  --stack-name orgs-prescriptive-guidance-cicd \
+  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
+
+aws cloudformation describe-stacks --stack-name orgs-prescriptive-guidance-cicd --query "Stacks[0].Outputs"
 ```
+
+Then, follow this [guide](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#creating-configuration-variables-for-a-repository) to create these GitHub Action variables in the repository:
+
+* `ARTIFACT_BUCKET` = value of `oArtifactBucket` from above
+* `ASSUME_ROLE_ARN` = value of `oGitHubRoleArn` from above
+* `CF_ROLE_ARN` = value of `oCloudFormationRoleArn` from above
+
+![GitHub Action Variables](./docs/github_actions_variables.png)
 
 ## Use Cases
 
