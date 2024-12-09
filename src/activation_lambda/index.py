@@ -55,15 +55,15 @@ try:
 except Exception as e:
     helper.init_failure(e)
 
-policy_types = {
+policy_types = [
+    "SERVICE_CONTROL_POLICY",
+    "RESOURCE_CONTROL_POLICY",
+    "DECLARATIVE_POLICY_EC2",
     "AISERVICES_OPT_OUT_POLICY",
     "BACKUP_POLICY",
     "CHATBOT_POLICY",
     "TAG_POLICY",
-    "DECLARATIVE_POLICY_EC2",
-    "RESOURCE_CONTROL_POLICY",
-    "SERVICE_CONTROL_POLICY",
-}
+]
 
 
 @helper.create
