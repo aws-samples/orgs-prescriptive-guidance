@@ -64,6 +64,8 @@ Then, follow this [guide](https://docs.github.com/en/actions/writing-workflows/c
 * `ASSUME_ROLE_ARN` = value of `oGitHubRoleArn` from above
 * `CF_ROLE_ARN` = value of `oCloudFormationRoleArn` from above
 
+The variables should match the image below:
+
 ![GitHub Action Variables](./docs/github_actions_variables.png)
 
 ## Use Cases
