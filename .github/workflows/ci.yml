@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     branches:
-      - jp-rcp
+      - main
   pull_request:
     branches:
-      - jp-rcp
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -71,7 +71,7 @@ jobs:
           sam deploy \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
             --no-confirm-changeset \
-            --disable-rollback \
+            --on-failure DELETE \
             --no-fail-on-empty-changeset \
             --no-progressbar \
             --role-arn ${{ vars.CF_ROLE_ARN }} \
