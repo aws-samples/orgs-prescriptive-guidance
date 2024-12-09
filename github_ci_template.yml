@@ -27,7 +27,69 @@ Resources:
           Action: "sts:AssumeRole"
       Description: !Sub "DO NOT DELETE - Used by CloudFormation. Created by CloudFormation ${AWS::StackId}"
       ManagedPolicyArns:
-        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"
+        #- !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSOrganizationsReadOnlyAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSCloudFormationReadOnlyAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/IAMReadOnlyAccess"
+      Policies:
+        - PolicyName: CloudFormationPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              Effect: Allow
+              Action:
+                - "cloudformation:CreateStackSet"
+                - "cloudformation:CreateStackInstances"
+                - "cloudformation:DeleteStackInstances"
+                - "cloudformation:DeleteStackSet"
+                - "cloudformation:UpdateStackSet"
+                - "iam:AddUserToGroup"
+                - "iam:CreateGroup"
+                - "iam:DeleteGroup"
+                - "iam:CreateRole"
+                - "iam:CreateServiceLinkedRole"
+                - "iam:DeleteRole"
+                - "iam:DeleteRolePolicy"
+                - "iam:PutRolePolicy"
+                - "iam:TagRole"
+                - "iam:RemoveUserFromGroup"
+                - "iam:CreateUser"
+                - "iam:DeleteUser"
+                - "iam:DeleteUserPolicy"
+                - "iam:PutUserPolicy"
+                - "iam:TagUser"
+                - "kms:CreateGrant"
+                - "kms:Decrypt"
+                - "kms:DescribeKey"
+                - "kms:Encrypt"
+                - "lambda:ListTags"
+                - "lambda:TagResource"
+                - "lambda:CreateFunction"
+                - "lambda:DeleteFunction"
+                - "lambda:GetFunction"
+                - "lambda:GetFunctionCodeSigningConfig"
+                - "lambda:GetFunctionRecursionConfig"
+                - "lambda:GetRuntimeManagementConfig"
+                - "lambda:InvokeFunction"
+                - "logs:DescribeLogGroups"
+                - "logs:ListTagsForResource"
+                - "logs:TagResource"
+                - "logs:CreateLogGroup"
+                - "logs:DeleteLogGroup"
+                - "logs:PutRetentionPolicy"
+                - "organizations:CreateOrganization"
+                - "organizations:CreateOrganizationalUnit"
+                - "organizations:DeleteOrganizationalUnit"
+                - "organizations:UpdateOrganizationalUnit"
+                - "organizations:CreatePolicy"
+                - "organizations:DeleteOrganization"
+                - "organizations:DeleteResourcePolicy"
+                - "organizations:AttachPolicy"
+                - "organizations:DeletePolicy"
+                - "organizations:DetachPolicy"
+                - "organizations:UpdatePolicy"
+                - "organizations:PutResourcePolicy"
+              Resource: "*"
       Tags:
         - Key: "aws-cloudformation:stack-name"
           Value: !Ref "AWS::StackName"
@@ -136,7 +198,13 @@ Resources:
       LifecycleConfiguration:
         Rules:
           - ExpirationInDays: 30
-            Id: RetentionRule
+            Id: ExpireAfter30Days
+            Status: Enabled
+          - AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+            Id: ExpireNonCurrentAndIncompleteMultipartUpload
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 1
             Status: Enabled
       OwnershipControls:
         Rules:
