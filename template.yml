@@ -495,7 +495,7 @@ Resources:
             reason: "Ignoring Reserved Concurrency"
     Properties:
       Architectures:
-        - arm64
+        - x86_64
       CodeUri: ./src/activation_lambda
       Description: !Sub "${AWS::StackName} Activation Function"
       Environment:
