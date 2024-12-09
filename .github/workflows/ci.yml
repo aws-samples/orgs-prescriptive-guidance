@@ -75,7 +75,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --no-progressbar \
             --role-arn ${{ vars.CF_ROLE_ARN }} \
-            --stack-name orgs-perspective-guidance \
+            --stack-name orgs-prescriptive-guidance \
             --s3-bucket ${{ vars.ARTIFACT_BUCKET }} \
             --s3-prefix ${{ github.repository }} \
             --tags \
