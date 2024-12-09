@@ -58,13 +58,13 @@ aws --region us-east-1 cloudformation deploy \
 aws --region us-east-1 cloudformation describe-stacks --stack-name orgs-prescriptive-guidance-cicd --query "Stacks[0].Outputs"
 ```
 
-Then, follow this [guide](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#creating-configuration-variables-for-a-repository) to create these GitHub Action variables in the repository:
+Then, follow this [guide](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#creating-configuration-variables-for-a-repository) to create GitHub Action variables in the repository:
 
 * `ARTIFACT_BUCKET` = value of `oArtifactBucket` from above
 * `ASSUME_ROLE_ARN` = value of `oGitHubRoleArn` from above
 * `CF_ROLE_ARN` = value of `oCloudFormationRoleArn` from above
 
-The variables should match the image below:
+The variables should look like the image below:
 
 ![GitHub Action Variables](./docs/github_actions_variables.png)
 

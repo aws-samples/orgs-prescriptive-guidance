@@ -52,6 +52,10 @@ organizations: "OrganizationsClient" = boto3.client(
 
 try:
     root_id = os.getenv("ROOT_ID")
+
+    response = cloudformation.describe_organizations_access(CallAs="SELF")
+    status: str = response.get("Status")
+    logger.info("Organizations Access Status: " + status)
 except Exception as e:
     helper.init_failure(e)
 
@@ -68,10 +72,6 @@ policy_types = [
 
 @helper.create
 def create(event: dict, context: LambdaContext):
-    response = cloudformation.describe_organizations_access(CallAs="SELF")
-    status: str = response.get("Status")
-    logger.info("Organizations Access Status: " + status)
-
     if status == "ACTIVE":
         logger.warning("Organizations access is already active")
     else:
@@ -107,10 +107,6 @@ def create(event: dict, context: LambdaContext):
 
 @helper.delete
 def delete(event: dict, context: LambdaContext):
-    response = cloudformation.describe_organizations_access(CallAs="SELF")
-    status: str = response.get("Status")
-    logger.info("Organizations Access Status: " + status)
-
     if status == "DISABLED":
         logger.warning("Organizations access is already disabled")
     else:
