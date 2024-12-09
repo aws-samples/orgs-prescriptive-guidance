@@ -1,0 +1,55 @@
+{
+    "ec2_attributes": {
+      "allowed_images_settings": {
+        "state": {
+          "@@assign": "enabled"
+        },
+        "image_criteria": {
+          "criteria_1": {
+            "allowed_image_providers": {
+              "@@assign": []
+            }
+          }
+        }
+      },
+      "image_block_public_access": {
+        "state": {
+          "@@assign": "block_new_sharing"
+        }
+      },
+      "instance_metadata_defaults": {
+        "http_tokens": {
+          "@@assign": "required"
+        },
+        "http_put_response_hop_limit": {
+          "@@assign": 2
+        },
+        "http_endpoint": {
+          "@@assign": "enabled"
+        },
+        "instance_metadata_tags": {
+          "@@assign": "enabled"
+        }
+      },
+      "serial_console_access": {
+        "status": {
+          "@@assign": "disabled"
+        }
+      },
+      "snapshot_block_public_access": {
+        "state": {
+          "@@assign": "block_all_sharing"
+        }
+      },
+      "vpc_block_public_access": {
+        "internet_gateway_block": {
+          "mode": {
+            "@@assign": "off"
+          },
+          "exclusions_allowed": {
+            "@@assign": "disabled"
+          }
+        }
+      }
+    }
+  }

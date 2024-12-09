@@ -73,7 +73,7 @@ Resources:
               StringEquals:
                 "aws:PrincipalOrgID": !GetAtt rOrganization.Id
 
-  rRootPolicy:
+  rRootServicePolicy:
     Type: "AWS::Organizations::Policy"
     DependsOn: rActivateCustomResource
     Properties:
@@ -91,11 +91,99 @@ Resources:
             Effect: Deny
             Action: "organizations:LeaveOrganization"
             Resource: "*"
-      Description: Deny Root User Actions and Leaving Organization
+          - Sid: DenyAccountClosure
+            Effect: Deny
+            Action:
+              - "organizations:CloseAccount"
+              - "account:CloseAccount"
+            Resource: "*"
+      Description: Deny Root User Actions, Leaving Organization, and Account Closure
       Name: RootPolicy
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rRootServicePolicy
       TargetIds:
         - !GetAtt rOrganization.RootId
       Type: SERVICE_CONTROL_POLICY
+  
+  rRootResourcePolicy:
+    Type: "AWS::Organizations::Policy"
+    DependsOn: rActivateCustomResource
+    Properties:
+      Content:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: EnforceOrgIdentities
+            Effect: Deny
+            Principal: "*"
+            Action:
+              - "s3:*"
+              - "sqs:*"
+              - "kms:*"
+              - "secretsmanager:*"
+              - "sts:AssumeRole"
+              - "sts:DecodeAuthorizationMessage"
+              - "sts:GetAccessKeyInfo"
+              - "sts:GetFederationToken"
+              - "sts:GetServiceBearerToken"
+              - "sts:GetSessionToken"
+              - "sts:SetContext"
+            Resource: "*"
+            Condition:
+              StringNotEqualsIfExists:
+                "aws:PrincipalOrgID": !GetAtt rOrganization.Id
+                "aws:ResourceTag/dp:exclude:identity": "true"
+              BoolIfExists:
+                "aws:PrincipalIsAWSService": "false"
+          - Sid: EnforceConfusedDeputyProtection
+            Effect: Deny
+            Principal: "*"
+            Action:
+              - "s3:*"
+              - "sqs:*"
+              - "kms:*"
+              - "secretsmanager:*"
+              - "sts:*"
+            Resource: "*"
+            Condition:
+              StringNotEqualsIfExists:
+                "aws:PrincipalOrgID": !GetAtt rOrganization.Id
+                "aws:ResourceTag/dp:exclude:identity": "true"
+              "Null":
+                "aws:SourceAccount": "false"
+              "Bool":
+                "aws:PrincipalIsAWSService": "true"
+          - Sid: ProtectDataPerimeterSessionTags
+            Effect: Deny
+            Principal: "*"
+            Action: "sts:TagSession"
+            Resource: "*"
+            Condition:
+              "Null":
+                "SAML:aud": "true"
+              StringNotEqualsIfExists:
+                "aws:PrincipalTag/team": admin
+                "aws:PrincipalOrgID": !GetAtt rOrganization.Id
+              "ForAnyValue:StringLike":
+                "aws:TagKeys":
+                  - "dp:*"
+                  - team
+      Description: Enforce identity perimeter
+      Name: RootPolicy
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rRootResourcePolicy
+      TargetIds:
+        - !GetAtt rOrganization.RootId
+      Type: RESOURCE_CONTROL_POLICY
 
   rExceptionsOu:
     Type: "AWS::Organizations::OrganizationalUnit"
@@ -317,7 +405,7 @@ Resources:
             reason: "Ignoring Reserved Concurrency"
     Properties:
       Architectures:
-        - arm64
+        - x86_64
       CodeUri: ./src/activation_lambda
       Description: !Sub "${AWS::StackName} Activation Function"
       Environment:
