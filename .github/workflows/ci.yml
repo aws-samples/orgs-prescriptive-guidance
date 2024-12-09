@@ -69,7 +69,7 @@ jobs:
       - name: Run sam deploy
         run: |
           sam deploy \
-            --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
             --no-confirm-changeset \
             --on-failure DELETE \
             --no-fail-on-empty-changeset \
