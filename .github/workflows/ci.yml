@@ -73,7 +73,7 @@ jobs:
           sam deploy \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
             --no-confirm-changeset \
-            --on-failure DELETE \
+            --disable-rollback \
             --no-fail-on-empty-changeset \
             --no-progressbar \
             --role-arn ${{ vars.CF_ROLE_ARN }} \
