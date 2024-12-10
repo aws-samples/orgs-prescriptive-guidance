@@ -66,6 +66,7 @@ Resources:
                   - "lambda:GetFunctionRecursionConfig"
                   - "lambda:GetRuntimeManagementConfig"
                   - "lambda:InvokeFunction"
+                  - "lambda:UpdateFunctionCode"
                   - "logs:DescribeLogGroups"
                   - "logs:ListTagsForResource"
                   - "logs:TagResource"
