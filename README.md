@@ -47,20 +47,32 @@ This repository contains a collection of [AWS CloudFormation](https://aws.amazon
 
 To deploy the template, you first need to install the [AWS Serverless Application Model](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) (AWS SAM).
 
-```
+```bash
 git clone https://github.com/aws-samples/orgs-prescriptive-guidance
 cd orgs-prescriptive-guidance
-sam build
-sam deploy \
-  --guided \
-  --tags "GITHUB_ORG=aws-samples GITHUB_REPO=orgs-prescriptive-guidance"
+aws --region us-east-1 cloudformation deploy \
+  --template-file github_ci_template.yml \
+  --stack-name orgs-prescriptive-guidance-cicd \
+  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
+
+aws --region us-east-1 cloudformation describe-stacks --stack-name orgs-prescriptive-guidance-cicd --query "Stacks[0].Outputs"
 ```
+
+Then, follow this [guide](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#creating-configuration-variables-for-a-repository) to create GitHub Action variables in the repository:
+
+* `ARTIFACT_BUCKET` = value of `oArtifactBucket` from above
+* `ASSUME_ROLE_ARN` = value of `oGitHubRoleArn` from above
+* `CF_ROLE_ARN` = value of `oCloudFormationRoleArn` from above
+
+The variables should look like the image below:
+
+![GitHub Action Variables](./docs/github_actions_variables.png)
 
 ## Use Cases
 
 #### Emergency Access
 
-In the event that there are any issues with AWS IAM Identity Center, an `EmergencyAccess_RO` and `EmergencyAccess_Ops` users have been deployed in the management account. These users can assume IAM roles `EmergencyAccess_Ops` and `EmergencyAccess_RO` in every account. These users thus have privileged access to all accounts which necessitates that they be used sparingly in a secure manner.
+In the event that there are any issues with AWS IAM Identity Center, IAM users `EmergencyAccess_RO` and `EmergencyAccess_Ops` have been deployed in the management account. These users can assume IAM roles `EmergencyAccess_RO` and `EmergencyAccess_Ops` in every account. These users thus have privileged access to all accounts which necessitates that they be used sparingly in a secure manner.
 
 There are no credentials associated with these users. To set credentials, and enable multi-factor authentication for these users, follow these [instructions](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable.html) to configure MFA devices for each EmergencyAccess user.
 
