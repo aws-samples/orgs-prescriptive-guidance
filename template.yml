@@ -4,7 +4,7 @@
 ---
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: "AWS::Serverless-2016-10-31"
-Description: Guidance for Organizations on AWS
+Description: "DO NOT DELETE - AWS Organization"
 
 Parameters:
   pSSOInstanceId:
@@ -157,6 +157,19 @@ Resources:
                 "aws:SourceAccount": "false"
               "Bool":
                 "aws:PrincipalIsAWSService": "true"
+          - Sid: EnforceSecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action:
+              - "s3:*"
+              - "sqs:*"
+              - "kms:*"
+              - "secretsmanager:*"
+              - "sts:*"
+            Resource: "*"
+            Condition:
+              BoolIfExists:
+                "aws:SecureTransport": "false"
           - Sid: ProtectDataPerimeterSessionTags
             Effect: Deny
             Principal: "*"
@@ -172,7 +185,7 @@ Resources:
                 "aws:TagKeys":
                   - "dp:*"
                   - team
-      Description: Enforce identity perimeter
+      Description: Enforce resource perimeter
       Name: RootPolicy
       Tags:
         - Key: "aws-cloudformation:stack-name"
@@ -407,7 +420,7 @@ Resources:
       Architectures:
         - x86_64
       CodeUri: ./src/activation_lambda
-      Description: !Sub "${AWS::StackName} Activation Function"
+      Description: "DO NOT DELETE - Organization Activation Function"
       Environment:
         Variables:
           ROOT_ID: !GetAtt rOrganization.RootId
@@ -475,7 +488,7 @@ Resources:
       Capabilities:
         - CAPABILITY_IAM
         - CAPABILITY_NAMED_IAM
-      Description: StackSet to deploy platform IAM roles to child accounts
+      Description: StackSet to deploy IAM roles to member accounts
       # ExecutionRoleName not supported on SERVICE_MANAGED
       OperationPreferences:
         FailureToleranceCount: 1
@@ -507,7 +520,7 @@ Resources:
       AutoDeployment:
         Enabled: true
         RetainStacksOnAccountRemoval: false
-      Description: StackSet to deploy platform SSM parameters to child accounts
+      Description: StackSet to deploy SSM parameters to member accounts
       # ExecutionRoleName not supported on SERVICE_MANAGED
       OperationPreferences:
         FailureToleranceCount: 1
@@ -670,7 +683,7 @@ Resources:
     Type: "AWS::SSO::PermissionSet"
     Condition: cHasInstanceArn
     Properties:
-      Description: Access to production accounts
+      Description: Access to production accounts for troubleshooting and support
       InlinePolicy: !Sub |-
         {
           "Version": "2012-10-17",

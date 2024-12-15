@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - jp-tweaks
   pull_request:
     branches:
       - main
+      - jp-tweaks
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -15,6 +17,7 @@ concurrency:
 env:
   AWS_REGION: us-east-1
   SAM_CLI_TELEMETRY: '0'
+  STACK_NAME: DO-NOT-DELETE-organization
 
 permissions:
   id-token: write
@@ -75,7 +78,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --no-progressbar \
             --role-arn ${{ vars.CF_ROLE_ARN }} \
-            --stack-name orgs-prescriptive-guidance \
+            --stack-name ${{ env.STACK_NAME }} \
             --s3-bucket ${{ vars.ARTIFACT_BUCKET }} \
             --s3-prefix ${{ github.repository }} \
             --tags \
