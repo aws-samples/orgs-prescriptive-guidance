@@ -18,9 +18,7 @@ This repository contains a collection of [AWS CloudFormation](https://aws.amazon
 
 ## Prerequisites
 
-- [Python 3](https://www.python.org/downloads/), installed
 - [AWS Command Line Interface (AWS CLI)](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) version 2, installed
-- [AWS Serverless Application Model (SAM)](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-getting-started.html), installed
 
 ## Tools and services
 
@@ -45,7 +43,7 @@ This repository contains a collection of [AWS CloudFormation](https://aws.amazon
 
 #### Installation
 
-To deploy the template, you first need to install the [AWS Serverless Application Model](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) (AWS SAM).
+To deploy the template, you first need to install the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 
 ```bash
 git clone https://github.com/aws-samples/orgs-prescriptive-guidance
