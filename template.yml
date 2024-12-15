@@ -379,9 +379,6 @@ Resources:
               - Effect: Allow
                 Action: "iam:CreateServiceLinkedRole"
                 Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/stacksets.cloudformation.amazonaws.com/AWSServiceRoleForCloudFormationStackSetsOrgAdmin*"
-                #Condition:
-                #  StringLike:
-                #    "iam:AWSServiceName": "stacksets.cloudformation.amazonaws.com"
       Tags:
         - Key: "aws-cloudformation:stack-name"
           Value: !Ref "AWS::StackName"
@@ -418,7 +415,7 @@ Resources:
             reason: "Ignoring Reserved Concurrency"
     Properties:
       Architectures:
-        - x86_64
+        - x86_64  # can't use ARM here due to Github Actions availability
       CodeUri: ./src/activation_lambda
       Description: "DO NOT DELETE - Organization Activation Function"
       Environment:
@@ -509,7 +506,7 @@ Resources:
             OrganizationalUnitIds:
               - !GetAtt rOrganization.RootId
           Regions:
-            - !Ref "AWS::Region" # single region only for the IAM roles
+            - !Ref "AWS::Region"  # single region only for the IAM roles
       StackSetName: AWSPlatform-BASELINE-ROLES
       TemplateURL: ./src/stackset_roles/template.yml
   
@@ -755,3 +752,8 @@ Resources:
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/job-function/ViewOnlyAccess"
       Name: Support
       SessionDuration: PT2H
+
+Outputs:
+  oOrganizationId:
+    Description: Organization ID
+    Value: !GetAtt rOrganization.Id

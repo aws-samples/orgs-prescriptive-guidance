@@ -86,7 +86,7 @@ aws --profile <profile-name> ssm start-session --target <instance-id> --document
 
 ## Clean up
 
-Deleting the CloudFormation Stack will remove the CloudFormation StackSets and IAM Identity Center Permission Sets, but it will retain the AWS Organizations.
+Deleting the CloudFormation Stack will remove the CloudFormation StackSets, IAM Identity Center Permission Sets, and the AWS Organization.
 
 ```
 sam delete
