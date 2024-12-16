@@ -3,7 +3,7 @@
 
 ---
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Organization reference architecture for SMB - Systems Manager Parameters
+Description: "DO NOT DELETE - Organizational SSM Parameters"
 
 Parameters:
   pManagementAccountId:

@@ -18,9 +18,7 @@ This repository contains a collection of [AWS CloudFormation](https://aws.amazon
 
 ## Prerequisites
 
-- [Python 3](https://www.python.org/downloads/), installed
 - [AWS Command Line Interface (AWS CLI)](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) version 2, installed
-- [AWS Serverless Application Model (SAM)](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-getting-started.html), installed
 
 ## Tools and services
 
@@ -45,7 +43,7 @@ This repository contains a collection of [AWS CloudFormation](https://aws.amazon
 
 #### Installation
 
-To deploy the template, you first need to install the [AWS Serverless Application Model](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) (AWS SAM).
+To deploy the sample template, first install the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). Then execute these commands to check out the sample from GitHub and deploy a CloudFormation template that creates an IAM role that will be used by GitHub Actions to deploy the sample.
 
 ```bash
 git clone https://github.com/aws-samples/orgs-prescriptive-guidance
@@ -68,6 +66,20 @@ The variables should look like the image below:
 
 ![GitHub Action Variables](./docs/github_actions_variables.png)
 
+After the GitHub Actions deployment is successful, navigate to [IAM Identity Center](https://console.aws.amazon.com/singlesignon/home) in the AWS Console and `Enable` IAM Identity Center. On the next screen, click `Go to settings`.
+
+Copy the value of the `Instance ARN` (it will look like `arn:aws:sso:::instance/ssoins-XXXXXX`) to your clipboard.
+
+Next we want to update the CloudFormation stack with the IAM Identity Center Instance ARN to provision a set of [Permission Sets](https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html).
+
+```bash
+aws --region us-east-1 cloudformation update-stack \
+  --stack-name DO-NOT-DELETE-organization \
+  --use-previous-template \
+  --parameters "ParameterKey=pInstanceArn,ParameterValue=arn:aws:sso:::instance/ssoins-XXXX" \
+  --capabilities CAPABILITY_NAMED_IAM
+```
+
 ## Use Cases
 
 #### Emergency Access
@@ -88,7 +100,7 @@ aws --profile <profile-name> ssm start-session --target <instance-id> --document
 
 ## Clean up
 
-Deleting the CloudFormation Stack will remove the CloudFormation StackSets and IAM Identity Center Permission Sets, but it will retain the AWS Organizations.
+Deleting the CloudFormation Stack will remove the CloudFormation StackSets, IAM Identity Center Permission Sets, and the AWS Organization.
 
 ```
 sam delete

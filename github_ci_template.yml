@@ -6,6 +6,10 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Guidance for Organizations on AWS - GitHub Actions CI/CD
 
 Parameters:
+  pStackName:
+    Type: String
+    Description: Name of the stack to use for this deployment
+    Default: DO-NOT-DELETE-organization
   pGithubOrganization:
     Type: String
     Description: GitHub Organization or User
@@ -27,10 +31,10 @@ Resources:
           Action: "sts:AssumeRole"
       Description: !Sub "DO NOT DELETE - Used by CloudFormation. Created by CloudFormation ${AWS::StackId}"
       ManagedPolicyArns:
-        #- !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSOrganizationsFullAccess"
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSCloudFormationFullAccess"
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/IAMReadOnlyAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSSSOReadOnly"
       Policies:
         - PolicyName: CloudFormationPolicy
           PolicyDocument:
@@ -73,6 +77,21 @@ Resources:
                   - "logs:CreateLogGroup"
                   - "logs:DeleteLogGroup"
                   - "logs:PutRetentionPolicy"
+                  - "sso:CreatePermissionSet"
+                  - "sso:AttachCustomerManagedPolicyReferenceToPermissionSet"
+                  - "sso:AttachManagedPolicyToPermissionSet"
+                  - "sso:DeleteInlinePolicyFromPermissionSet"
+                  - "sso:DeletePermissionSet"
+                  - "sso:DeletePermissionsBoundaryFromPermissionSet"
+                  - "sso:DeletePermissionsPolicy"
+                  - "sso:ProvisionPermissionSet"
+                  - "sso:PutInlinePolicyToPermissionSet"
+                  - "sso:PutPermissionsBoundaryToPermissionSet"
+                  - "sso:PutPermissionsPolicy"
+                  - "sso:StartSSO"
+                  - "sso:TagResource"
+                  - "sso:UntagResource"
+                  - "sso:UpdatePermissionSet"
                 Resource: "*"
               - Effect: Allow
                 Action: "s3:GetObject"
@@ -129,7 +148,7 @@ Resources:
                   - "cloudformation:DeleteStack"
                   - "cloudformation:RollbackStack"
                   - "cloudformation:UpdateStack"
-                Resource: !Sub "arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stack/${pGitHubRepository}*"
+                Resource: !Sub "arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stack/${pStackName}*"
                 Condition:
                   ArnLike:
                     "cloudformation:RoleArn": !GetAtt rCloudFormationRole.Arn
@@ -145,7 +164,7 @@ Resources:
                   - "cloudformation:TagResource"
                   - "cloudformation:UntagResource"
                   - "cloudformation:UpdateTerminationProtection"
-                Resource: !Sub "arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stack/${pGitHubRepository}*"
+                Resource: !Sub "arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stack/${pStackName}*"
               - Effect: Allow
                 Action:
                   - "cloudformation:ValidateTemplate"

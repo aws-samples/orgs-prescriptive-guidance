@@ -3,7 +3,7 @@
 
 ---
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Organization reference architecture for SMB - Baseline IAM Roles
+Description: "DO NOT DELETE - Organizational IAM Roles"
 
 Parameters:
   pManagementAccountId:
@@ -56,7 +56,7 @@ Resources:
           Principal:
             AWS: !Sub "arn:${AWS::Partition}:iam::${pManagementAccountId}:user/EmergencyAccess_Ops"
           Action: "sts:AssumeRole"
-      Description: !Sub "DO NOT DELETE - Used for emergency access. Created by CloudFormation ${AWS::StackId}"        
+      Description: !Sub "DO NOT DELETE - Used for emergency access. Created by CloudFormation ${AWS::StackId}"
       ManagedPolicyArns:
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/job-function/SystemAdministrator"
       RoleName: EmergencyAccess_Ops
@@ -83,7 +83,7 @@ Resources:
           Principal:
             AWS: !Sub "arn:${AWS::Partition}:iam::${pManagementAccountId}:user/EmergencyAccess_RO"
           Action: "sts:AssumeRole"
-      Description: !Sub "DO NOT DELETE - Used for emergency access (read-only). Created by CloudFormation ${AWS::StackId}"        
+      Description: !Sub "DO NOT DELETE - Used for emergency access (read-only). Created by CloudFormation ${AWS::StackId}"
       ManagedPolicyArns:
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/ReadOnlyAccess"
       RoleName: EmergencyAccess_RO
@@ -110,11 +110,6 @@ Resources:
           Principal:
             Service: !Sub "servicecatalog.${AWS::URLSuffix}"
           Action: "sts:AssumeRole"
-          Condition:
-            StringEquals:
-              "aws:SourceAccount": !Ref "AWS::AccountId"
-            #ArnLike:
-            #  "aws:SourceArn": !Sub "aws:${AWS::Partition}:servicecatalog:${AWS::Region}:${AWS::AccountId}:*"
       Description: !Sub "DO NOT DELETE - Used by Service Catalog. Created by CloudFormation ${AWS::StackId}"
       ManagedPolicyArns:
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"
@@ -149,7 +144,7 @@ Resources:
               "aws:SourceArn": !Sub "aws:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${pDeveloperPrefix}*"
       Description: !Sub "DO NOT DELETE - Used by CloudFormation. Created by CloudFormation ${AWS::StackId}"
       ManagedPolicyArns:
-        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"  # limited by permissions boundary
       PermissionsBoundary: !Ref rDeveloperBoundary
       RoleName: !Ref pCloudFormationRoleName
       Tags:
@@ -274,27 +269,29 @@ Resources:
           - Sid: OverlyPermissiveAllowedServices
             Effect: Allow
             Action:
-              - "lambda:*"
+              - "amplify:*"
               - "apigateway:*"
+              - "appsync:*"
               - "events:*"
               - "dynamodb:*"
-              - "s3:*"
+              - "lambda:*"
               - "logs:*"
+              - "s3:*"
             Resource: "*"
 
 Outputs:
-  CloudFormationRoleArn:
+  oCloudFormationRoleArn:
     Description: CloudFormation IAM role ARN
     Value: !GetAtt rCloudFormationRole.Arn
-  CloudFormationRoleName:
+  oCloudFormationRoleName:
     Description: CloudFormation IAM role name
     Value: !Ref rCloudFormationRole
-  ServiceCatalogRoleArn:
+  oServiceCatalogRoleArn:
     Description: Service Catalog IAM role ARN
     Value: !GetAtt rServiceCatalogRole.Arn
-  ServiceCatalogRoleName:
+  oServiceCatalogRoleName:
     Description: Service Catalog IAM role name
     Value: !Ref rServiceCatalogRole
-  DeveloperBoundaryPolicyArn:
+  oDeveloperBoundaryPolicyArn:
     Description: Developer boundary IAM policy ARN
     Value: !Ref rDeveloperBoundary
