@@ -7,9 +7,9 @@ Transform: "AWS::Serverless-2016-10-31"
 Description: "DO NOT DELETE - AWS Organization"
 
 Parameters:
-  pSSOInstanceId:
+  pInstanceArn:
     Type: String
-    Description: AWS SSO Instance ID
+    Description: AWS Identity Center Center Instance ARN
     Default: ""
   pDeveloperPrefix:
     Type: String
@@ -46,7 +46,7 @@ Parameters:
     Default: Security_Prod
 
 Conditions:
-  cHasInstanceArn: !Not [!Equals [!Ref pSSOInstanceId, ""]]
+  cHasInstanceArn: !Not [!Equals [!Ref pInstanceArn, ""]]
 
 Resources:
   rOrganization:
@@ -546,7 +546,7 @@ Resources:
     Condition: cHasInstanceArn
     Properties:
       Description: Access to Billing and Cost Explorer
-      InstanceArn: !Sub "arn:${AWS::Partition}:sso:::instance/${pSSOInstanceId}"
+      InstanceArn: !Ref pInstanceArn
       ManagedPolicies:
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/job-function/Billing"
       Name: AccountManager
@@ -667,7 +667,7 @@ Resources:
             }
           ]
         }
-      InstanceArn: !Sub "arn:${AWS::Partition}:sso:::instance/${pSSOInstanceId}"
+      InstanceArn: !Ref pInstanceArn
       ManagedPolicies:
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSServiceCatalogEndUserFullAccess"
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSBillingReadOnlyAccess"
@@ -745,7 +745,7 @@ Resources:
             }            
           ]
         }
-      InstanceArn: !Sub "arn:${AWS::Partition}:sso:::instance/${pSSOInstanceId}"
+      InstanceArn: !Ref pInstanceArn
       ManagedPolicies:
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSBillingReadOnlyAccess"
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSSupportAccess"
@@ -757,3 +757,7 @@ Outputs:
   oOrganizationId:
     Description: Organization ID
     Value: !GetAtt rOrganization.Id
+  oInstanceArn:
+    Description: IAM Identity Center Instance Arn
+    Value: !Ref pInstanceArn
+    Condition: cHasInstanceArn

@@ -43,7 +43,7 @@ This repository contains a collection of [AWS CloudFormation](https://aws.amazon
 
 #### Installation
 
-To deploy the template, you first need to install the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
+To deploy the sample template, first install the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). Then execute these commands to check out the sample from GitHub and deploy a CloudFormation template that creates an IAM role that will be used by GitHub Actions to deploy the sample.
 
 ```bash
 git clone https://github.com/aws-samples/orgs-prescriptive-guidance
@@ -65,6 +65,20 @@ Then, follow this [guide](https://docs.github.com/en/actions/writing-workflows/c
 The variables should look like the image below:
 
 ![GitHub Action Variables](./docs/github_actions_variables.png)
+
+After the GitHub Actions deployment is successful, navigate to [IAM Identity Center](https://us-east-1.console.aws.amazon.com/singlesignon/home?region=us-east-1#!/) in the AWS Console and `Enable` IAM Identity Center. On the next screen, click `Go to settings`.
+
+Copy the value of the `Instance ARN` (it will look like `arn:aws:sso:::instance/ssoins-XXXXXX`) to your clipboard.
+
+Next we want to update the CloudFormation stack with the IAM Identity Center Instance ID to provision a set of [Permission Sets](https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html).
+
+```bash
+aws --region us-east-1 cloudformation update-stack \
+  --stack-name DO-NOT-DELETE-organization \
+  --use-previous-template \
+  --parameters "ParameterKey=pInstanceArn,ParameterValue=arn:aws:sso:::instance/ssoins-XXXX" \
+  --capabilities CAPABILITY_NAMED_IAM
+```
 
 ## Use Cases
 
