@@ -66,7 +66,7 @@ The variables should look like the image below:
 
 ![GitHub Action Variables](./docs/github_actions_variables.png)
 
-After the GitHub Actions deployment is successful, navigate to [IAM Identity Center](https://us-east-1.console.aws.amazon.com/singlesignon/home?region=us-east-1#!/) in the AWS Console and `Enable` IAM Identity Center. On the next screen, click `Go to settings`.
+After the GitHub Actions deployment is successful, navigate to [IAM Identity Center](https://console.aws.amazon.com/singlesignon/home) in the AWS Console and `Enable` IAM Identity Center. On the next screen, click `Go to settings`.
 
 Copy the value of the `Instance ARN` (it will look like `arn:aws:sso:::instance/ssoins-XXXXXX`) to your clipboard.
 
