@@ -70,7 +70,7 @@ After the GitHub Actions deployment is successful, navigate to [IAM Identity Cen
 
 Copy the value of the `Instance ARN` (it will look like `arn:aws:sso:::instance/ssoins-XXXXXX`) to your clipboard.
 
-Next we want to update the CloudFormation stack with the IAM Identity Center Instance ID to provision a set of [Permission Sets](https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html).
+Next we want to update the CloudFormation stack with the IAM Identity Center Instance ARN to provision a set of [Permission Sets](https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html).
 
 ```bash
 aws --region us-east-1 cloudformation update-stack \
