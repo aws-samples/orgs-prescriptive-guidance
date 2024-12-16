@@ -681,7 +681,7 @@ Resources:
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSSupportAccess"
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/job-function/ViewOnlyAccess"
       Name: Developer
-      SessionDuration: PT12H
+      SessionDuration: PT8H
       Tags:
         - Key: "aws-cloudformation:stack-name"
           Value: !Ref "AWS::StackName"
