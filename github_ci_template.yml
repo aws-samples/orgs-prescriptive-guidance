@@ -34,6 +34,7 @@ Resources:
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSOrganizationsFullAccess"
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSCloudFormationFullAccess"
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/IAMReadOnlyAccess"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSSSOReadOnly"
       Policies:
         - PolicyName: CloudFormationPolicy
           PolicyDocument:
@@ -76,6 +77,21 @@ Resources:
                   - "logs:CreateLogGroup"
                   - "logs:DeleteLogGroup"
                   - "logs:PutRetentionPolicy"
+                  - "sso:CreatePermissionSet"
+                  - "sso:AttachCustomerManagedPolicyReferenceToPermissionSet"
+                  - "sso:AttachManagedPolicyToPermissionSet"
+                  - "sso:DeleteInlinePolicyFromPermissionSet"
+                  - "sso:DeletePermissionSet"
+                  - "sso:DeletePermissionsBoundaryFromPermissionSet"
+                  - "sso:DeletePermissionsPolicy"
+                  - "sso:ProvisionPermissionSet"
+                  - "sso:PutInlinePolicyToPermissionSet"
+                  - "sso:PutPermissionsBoundaryToPermissionSet"
+                  - "sso:PutPermissionsPolicy"
+                  - "sso:StartSSO"
+                  - "sso:TagResource"
+                  - "sso:UntagResource"
+                  - "sso:UpdatePermissionSet"
                 Resource: "*"
               - Effect: Allow
                 Action: "s3:GetObject"
