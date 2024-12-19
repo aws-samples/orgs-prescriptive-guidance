@@ -46,12 +46,13 @@ This repository contains a collection of [AWS CloudFormation](https://aws.amazon
 To deploy the sample template, first install the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). [Fork](https://github.com/aws-samples/orgs-prescriptive-guidance/fork) this respository to your own GitHub owner account. Then execute these commands to check out the sample from GitHub and deploy a CloudFormation template that creates an IAM role that will be used by GitHub Actions to deploy the sample.
 
 ```bash
-git clone https://github.com/<your user or organization>/orgs-prescriptive-guidance
+git clone https://github.com/<your Github Owner>/orgs-prescriptive-guidance
 cd orgs-prescriptive-guidance
 aws --region us-east-1 cloudformation deploy \
   --template-file github_ci_template.yml \
   --stack-name orgs-prescriptive-guidance-cicd \
-  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
+  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+  --parameter-overrides pGithubOrganization=<your GitHub Owner> pGitHubRepository=orgs-prescriptive-guidance
 
 aws --region us-east-1 cloudformation describe-stacks --stack-name orgs-prescriptive-guidance-cicd --query "Stacks[0].Outputs"
 ```
