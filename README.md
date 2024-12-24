@@ -67,9 +67,19 @@ The variables should look like the image below:
 
 ![GitHub Action Variables](./docs/github_actions_variables.png)
 
-After the GitHub Actions deployment is successful, navigate to [IAM Identity Center](https://console.aws.amazon.com/singlesignon/home) in the AWS Console and `Enable` IAM Identity Center. On the next screen, click `Go to settings`.
+Next we will run the deployment from Github Actions. If it's the first time you're accesing the Actions tab from a fork, you might need to enable the Actions feature for your fork.
 
-Copy the value of the `Instance ARN` (it will look like `arn:aws:sso:::instance/ssoins-XXXXXX`) to your clipboard.
+![GitHub Actions Enable Actions](./docs/github_actions_enable_actions.png)
+
+Now, you can trigger the GitHub Actions workflow by clicking the `Run workflow` button in the GitHub Actions UI.
+
+![GitHub Actions Run Workflow](./docs/github_actions_run_workflow.png)
+
+After the GitHub Actions deployment is successful, navigate to [IAM Identity Center](https://console.aws.amazon.com/singlesignon/home) in the AWS Console and `Enable` IAM Identity Center.
+
+![IAM Identity Center Enable](./docs/aws_iam_identity_center_enable.png)
+
+On the next screen, click `Go to settings`. Copy the value of the `Instance ARN` (it will look like `arn:aws:sso:::instance/ssoins-XXXXXX`) to your clipboard.
 
 Next we want to update the CloudFormation stack with the IAM Identity Center Instance ARN to provision a set of [Permission Sets](https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html).
 
