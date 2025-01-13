@@ -33,11 +33,11 @@ This repository contains a collection of [AWS CloudFormation](https://aws.amazon
 
 | Parameter                |  Type  |         Default          | Description          |
 | ------------------------ | :----: | :----------------------: | -------------------- |
-| pSSOInstanceId           | String |  _None_  | Optional - AWS IAM Identity Center instance ID |
+| pInstanceArn             | String |  _None_  | Optional - AWS IAM Identity Center instance ARN |
 | pDeveloperPrefix         | String | app | Prefix used by developers when creating IAM roles and CloudFormation stacks |
 | pCloudFormationRoleName  | String | CloudFormationRole | Name of the IAM role used by AWS CloudFormation |
 | pServiceCatalogRoleName  | String | ServiceCatalogRole | Name of the IAM role used by AWS Service Catalog |
-| pRegions                 | String | us-east-1 | Comma-delimited list of AWS Regions |
+| pRegions                 | CommaDelimitedList | us-east-1 | Comma-delimited list of AWS Regions |
 | pSandboxOuName           | String | Sandbox | Name of the organizational unit for sandbox AWS accounts |
 | pSecurityOuName          | String | Security_Prod | Name of the organizational unit for security-related AWS accounts |
 
