@@ -2,15 +2,22 @@
 
 ### Table of contents
 
-1. [Introduction](#introduction)
-2. [Prerequisites](#prerequisites)
-3. [Tools and services](#tools-and-services)
-4. [Usage](#usage)
-5. [Use Cases](#use-cases)
-6. [Clean up](#clean-up)
-7. [Reference](#reference)
-8. [Contributing](#contributing)
-9. [License](#license)
+- [Guidance for Organization on AWS](#guidance-for-organization-on-aws)
+    - [Table of contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Prerequisites](#prerequisites)
+  - [Tools and services](#tools-and-services)
+  - [Usage](#usage)
+      - [Parameters](#parameters)
+      - [Installation](#installation)
+      - [Enabling Control Tower](#enabling-control-tower)
+  - [Use Cases](#use-cases)
+      - [Emergency Access](#emergency-access)
+      - [To Access an EC2 Instance](#to-access-an-ec2-instance)
+  - [Clean up](#clean-up)
+  - [Reference](#reference)
+  - [Contributing](#contributing)
+  - [License](#license)
 
 ## Introduction
 
@@ -91,6 +98,21 @@ aws --region us-east-1 cloudformation update-stack \
   --capabilities CAPABILITY_NAMED_IAM
 ```
 
+#### Enabling Control Tower
+To enable Control Tower you can deploy the cloudformation template _enable_control_tower.yml_.
+Please note that the deployment of the sample template _template.yml_ is not a requirement for deploying _enable_control_tower.yml_, only a recommendation. 
+_enable_control_tower.yml_ will by default create a new Organization.
+
+```bash
+git clone https://github.com/<your Github Owner>/orgs-prescriptive-guidance
+cd orgs-prescriptive-guidance
+aws --region us-east-1 cloudformation deploy \
+  --template-file enable_control_tower.yml \
+  --stack-name control-tower \
+  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+  --parameter-overrides pLogArchiveAccountEmailAddress=<Your wanted Log Archive account email address> pSecurityAccountEmailAddress=<Your wanted Security account email address>
+```
+
 ## Use Cases
 
 #### Emergency Access
@@ -123,7 +145,7 @@ This solution is inspired by these references:
 
 - [AWS Security Reference Architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/architecture.html)
 
-## Security
+## Contributing
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
 
