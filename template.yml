@@ -593,7 +593,7 @@ Resources:
               "Resource": "arn:${AWS::Partition}:cloudformation:*:*:stack/${pDeveloperPrefix}*",
               "Condition": {
                 "StringEquals": {
-                  "aws:ResourceAccount": "${!aws:PrincipalAccount}",
+                  "aws:ResourceAccount": "${!aws:PrincipalAccount}"
                 },
                 "ArnLike": {
                   "cloudformation:RoleArn": "arn:${AWS::Partition}:iam::*:role/${pCloudFormationRoleName}"
@@ -661,11 +661,13 @@ Resources:
             },
             {
               "Effect": "Allow",
-              "Action": "ssm:StartSession",
+              "Action": [
+                "ssm:SendCommand",
+                "ssm:StartSession"
+              ],
               "Resource": [
                 "arn:${AWS::Partition}:ec2:*:*:instance/*",
                 "arn:${AWS::Partition}:ssm:*:*:document/SSM-SessionManagerRunShell",
-                "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartSSHSession",
                 "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartPortForwardingSession",
                 "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartPortForwardingSessionToRemoteHost"
               ],
@@ -677,7 +679,10 @@ Resources:
             },
             {
               "Effect": "Allow",
-              "Action": "ssm:TerminateSession",
+              "Action": [
+                "ssm:ResumeSession",
+                "ssm:TerminateSession"
+              ],
               "Resource": "arn:${AWS::Partition}:ssm:*:*:session/*",
               "Condition": {
                 "StringLike": {
@@ -751,11 +756,13 @@ Resources:
             },
             {
               "Effect": "Allow",
-              "Action": "ssm:StartSession",
+              "Action": [
+                "ssm:SendCommand",
+                "ssm:StartSession"
+              ],
               "Resource": [
                 "arn:${AWS::Partition}:ec2:*:*:instance/*",
                 "arn:${AWS::Partition}:ssm:*:*:document/SSM-SessionManagerRunShell",
-                "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartSSHSession",
                 "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartPortForwardingSession",
                 "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartPortForwardingSessionToRemoteHost"
               ],
@@ -767,7 +774,10 @@ Resources:
             },
             {
               "Effect": "Allow",
-              "Action": "ssm:TerminateSession",
+              "Action": [
+                "ssm:ResumeSession",
+                "ssm:TerminateSession"
+              ],
               "Resource": "arn:${AWS::Partition}:ssm:*:*:session/*",
               "Condition": {
                 "StringLike": {
