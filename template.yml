@@ -592,8 +592,11 @@ Resources:
               ],
               "Resource": "arn:${AWS::Partition}:cloudformation:*:*:stack/${pDeveloperPrefix}*",
               "Condition": {
+                "StringEquals": {
+                  "aws:ResourceAccount": "${!aws:PrincipalAccount}",
+                },
                 "ArnLike": {
-                  "cloudformation:RoleArn": "arn:${AWS::Partition}:iam::${!aws:PrincipalAccount}:role/${pCloudFormationRoleName}"
+                  "cloudformation:RoleArn": "arn:${AWS::Partition}:iam::*:role/${pCloudFormationRoleName}"
                 },
                 "Null": {
                   "cloudformation:ImportResourceTypes": true
@@ -612,7 +615,12 @@ Resources:
                 "cloudformation:UntagResource",
                 "cloudformation:UpdateTerminationProtection"
               ],
-              "Resource": "arn:${AWS::Partition}:cloudformation:*:*:stack/${pDeveloperPrefix}*"
+              "Resource": "arn:${AWS::Partition}:cloudformation:*:*:stack/${pDeveloperPrefix}*",
+              "Condition": {
+                "StringEquals": {
+                  "aws:ResourceAccount": "${!aws:PrincipalAccount}"
+                }
+              }
             },
             {
               "Effect": "Allow",
@@ -621,7 +629,12 @@ Resources:
                 "cloudformation:ValidateTemplate",
                 "cloudformation:EstimateTemplateCost"
               ],
-              "Resource": "*"
+              "Resource": "*",
+              "Condition": {
+                "StringEquals": {
+                  "aws:ResourceAccount": "${!aws:PrincipalAccount}"
+                }
+              }
             },
             {
               "Effect": "Allow",
@@ -630,6 +643,9 @@ Resources:
               "Condition": {
                 "ForAnyValue:StringEquals": {
                   "aws:CalledVia": "cloudformation.${AWS::URLSuffix}"
+                },
+                "StringEquals": {
+                  "aws:ResourceAccount": "${!aws:PrincipalAccount}"
                 }
               }
             },
@@ -654,9 +670,6 @@ Resources:
                 "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartPortForwardingSessionToRemoteHost"
               ],
               "Condition": {
-                "BoolIfExists": {
-                  "ssm:SessionDocumentAccessCheck": "true"
-                },
                 "StringEquals": {
                   "aws:ResourceAccount": "${!aws:PrincipalAccount}"
                 }
@@ -715,8 +728,11 @@ Resources:
               "Action": "cloudformation:ContinueUpdateRollback",
               "Resource": "arn:${AWS::Partition}:cloudformation:*:*:stack/${pDeveloperPrefix}*",
               "Condition": {
+                "StringEquals": {
+                  "aws:ResourceAccount": "${!aws:PrincipalAccount}"
+                },
                 "ArnLike": {
-                  "cloudformation:RoleArn": "arn:${AWS::Partition}:iam::${!aws:PrincipalAccount}:role/${pCloudFormationRoleName}"
+                  "cloudformation:RoleArn": "arn:${AWS::Partition}:iam::*:role/${pCloudFormationRoleName}"
                 },
                 "Null": {
                   "cloudformation:ImportResourceTypes": true
@@ -726,7 +742,12 @@ Resources:
             {
               "Effect": "Allow",
               "Action": "cloudformation:CancelUpdateStack",
-              "Resource": "arn:${AWS::Partition}:cloudformation:*:*:stack/${pDeveloperPrefix}*"
+              "Resource": "arn:${AWS::Partition}:cloudformation:*:*:stack/${pDeveloperPrefix}*",
+              "Condition": {
+                "StringEquals": {
+                  "aws:ResourceAccount": "${!aws:PrincipalAccount}"
+                }
+              }
             },
             {
               "Effect": "Allow",
@@ -739,9 +760,6 @@ Resources:
                 "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartPortForwardingSessionToRemoteHost"
               ],
               "Condition": {
-                "BoolIfExists": {
-                  "ssm:SessionDocumentAccessCheck": "true"
-                },
                 "StringEquals": {
                   "aws:ResourceAccount": "${!aws:PrincipalAccount}"
                 }
