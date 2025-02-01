@@ -549,6 +549,7 @@ Resources:
       InstanceArn: !Ref pInstanceArn
       ManagedPolicies:
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/job-function/Billing"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/CostOptimizationHubReadOnlyAccess"
       Name: AccountManager
       RelayStateType: https://console.aws.amazon.com/costmanagement/home
       SessionDuration: PT8H
@@ -559,6 +560,77 @@ Resources:
           Value: !Ref "AWS::StackId"
         - Key: "aws-cloudformation:logical-id"
           Value: rAccountManagerPermissionSet
+  
+  rAdministratorPermissionSet:
+    Type: "AWS::SSO::PermissionSet"
+    Condition: cHasInstanceArn
+    Properties:
+      Description: RESTRICTED - Highly priviledged administrator access
+      InstanceArn: !Ref pInstanceArn
+      ManagedPolicies:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"
+      Name: RESTRICTED-AdministratorAccess
+      SessionDuration: PT1H
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rAdministratorPermissionSet
+  
+  rShellAccessPermissionSet:
+    Type: "AWS::SSO::PermissionSet"
+    Condition: cHasInstanceArn
+    Properties:
+      Description: Command-line shell access to EC2 instances
+      InlinePolicy: !Sub |-
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ssm:SendCommand",
+                "ssm:StartSession"
+              ],
+              "Resource": [
+                "arn:${AWS::Partition}:ec2:*:*:instance/*",
+                "arn:${AWS::Partition}:ssm:*:*:document/SSM-SessionManagerRunShell",
+                "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartPortForwardingSession",
+                "arn:${AWS::Partition}:ssm:*:*:document/AWS-StartPortForwardingSessionToRemoteHost"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:ResourceAccount": "${!aws:PrincipalAccount}"
+                }
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ssm:ResumeSession",
+                "ssm:TerminateSession"
+              ],
+              "Resource": "arn:${AWS::Partition}:ssm:*:*:session/*",
+              "Condition": {
+                "StringLike": {
+                  "ssm:resourceTag/aws:ssmmessages:session-id": "${!aws:userid}"
+                }
+              }
+            }
+          ]
+        }
+      InstanceArn: !Ref pInstanceArn
+      Name: ShellAccess
+      SessionDuration: PT8H
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rShellAccessPermissionSet
 
   rDeveloperPermissionSet:
     Type: "AWS::SSO::PermissionSet"
