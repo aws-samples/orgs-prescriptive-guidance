@@ -76,6 +76,7 @@ jobs:
             --disable-rollback \
             --no-fail-on-empty-changeset \
             --no-progressbar \
+            --parameter-overrides "pGithubOrganization=${{ github.repository_owner }}" \
             --role-arn ${{ vars.CF_ROLE_ARN }} \
             --stack-name ${{ env.STACK_NAME }} \
             --s3-bucket ${{ vars.ARTIFACT_BUCKET }} \
