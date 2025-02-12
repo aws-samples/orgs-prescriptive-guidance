@@ -44,6 +44,9 @@ Parameters:
     Type: String
     Description: Organizational Unit (OU) for security accounts
     Default: Security_Prod
+  pGithubOrganization:
+    Type: String
+    Description: GitHub Organization or User
 
 Conditions:
   cHasInstanceArn: !Not [!Equals [!Ref pInstanceArn, ""]]
@@ -200,6 +203,37 @@ Resources:
         - !GetAtt rOrganization.RootId
       Type: RESOURCE_CONTROL_POLICY
   
+  rTrustedOIDCTenantsPolicy:
+    Type: "AWS::Organizations::Policy"
+    DependsOn: rActivateCustomResource
+    Properties:
+      Content:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: EnforceTrustedOIDCTenants
+            Effect: Deny
+            Principal: "*"
+            Action: "sts:AssumeRoleWithWebIdentity"
+            Resource: "*"
+            Condition:
+              StringNotLikeIfExists:
+                "token.actions.githubusercontent.com:sub": !Sub "repo:${pGithubOrganization}/*"
+                "aws:ResourceTag/dp:exclude:identity": "true"
+              "Null":
+                "token.actions.githubusercontent.com:sub": "false"
+      Description: Limit access to trusted OIDC identity providers
+      Name: TrustedOIDCProvidersPolicy
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rTrustedOIDCTenantsPolicy
+      TargetIds:
+        - !GetAtt rOrganization.RootId
+      Type: RESOURCE_CONTROL_POLICY
+
   rRootDeclarativePolicyEC2:
     Type: "AWS::Organizations::Policy"
     DependsOn: rActivateCustomResource
