@@ -85,8 +85,10 @@ Resources:
             Action: "*"
             Resource: "*"
             Condition:
-              StringLike:
+              ArnLike:
                 "aws:PrincipalArn": !Sub "arn:${AWS::Partition}:iam::*:root"
+              "Null":
+                "aws:AssumedRoot": "true"
           - Sid: DenyLeaveOrganization
             Effect: Deny
             Action: "organizations:LeaveOrganization"
