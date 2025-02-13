@@ -44,6 +44,14 @@ Parameters:
     Type: String
     Description: Organizational Unit (OU) for security accounts
     Default: Security_Prod
+  pWorkloadsOuName:
+    Type: String
+    Description: Organizational Unit (OU) for workloads accounts
+    Default: Workloads
+  pInfrastructureOuName:
+    Type: String
+    Description: Organizational Unit (OU) for infrastructure accounts
+    Default: Infrastructure
   pGithubOrganization:
     Type: String
     Description: GitHub Organization or User
@@ -423,7 +431,7 @@ Resources:
     Type: "AWS::Organizations::OrganizationalUnit"
     DependsOn: rOrgWaiter
     Properties:
-      Name: Infrastructure
+      Name: !Ref pInfrastructureOuName
       ParentId: !If
         - cHasOrganizationRootId
         - !Ref pOrganizationRootId
@@ -453,7 +461,7 @@ Resources:
     Type: "AWS::Organizations::OrganizationalUnit"
     DependsOn: rOrgWaiter
     Properties:
-      Name: Workloads
+      Name: !Ref pWorkloadsOuName
       ParentId: !If
         - cHasOrganizationRootId
         - !Ref pOrganizationRootId

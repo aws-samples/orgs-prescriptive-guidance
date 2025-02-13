@@ -73,6 +73,7 @@ Resources:
                   - "lambda:GetRuntimeManagementConfig"
                   - "lambda:InvokeFunction"
                   - "lambda:UpdateFunctionCode"
+                  - "lambda:UpdateFunctionConfiguration"
                   - "logs:DescribeLogGroups"
                   - "logs:ListTagsForResource"
                   - "logs:TagResource"
