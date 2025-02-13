@@ -77,9 +77,9 @@ Rules:
   tCreateOrganization:
     RuleCondition: !Equals ["No", !Ref pCreateNewAwsOrg]
     Assertions:
-      - Assert: !Or
-          - !Equals [!Ref pOrganizationId, ""]
-          - !Equals [!Ref pOrganizationRootId, ""]
+      - Assert: !And
+          - !Not [!Equals [!Ref pOrganizationId, ""]]
+          - !Not [!Equals [!Ref pOrganizationRootId, ""]]
         AssertDescription: "Must provide existing AWS Organizations ID and AWS Organizations Root ID"
 
 Resources:
