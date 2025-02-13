@@ -47,6 +47,8 @@ This repository contains a collection of [AWS CloudFormation](https://aws.amazon
 | pRegions                 | CommaDelimitedList | us-east-1 | Comma-delimited list of AWS Regions |
 | pSandboxOuName           | String | Sandbox | Name of the organizational unit for sandbox AWS accounts |
 | pSecurityOuName          | String | Security_Prod | Name of the organizational unit for security-related AWS accounts |
+| pWorkloadsOuName         | String | Workloads | Name of the organizational unit for workload AWS accounts |
+| pInfrastructureOuName    | String | Infrastructure | Name of the organization unit for infrastructure AWS accounts |
 | pGithubOrganization      | String | _None_ | GitHub Organization |
 | pCreateNewAwsOrg         | String | Yes | Whether to create a new AWS Organization or not |
 | pOrganizationId          | String | _None_ | Existing AWS Organization ID |
