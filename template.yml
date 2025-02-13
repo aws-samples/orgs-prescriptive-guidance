@@ -1117,7 +1117,10 @@ Resources:
 Outputs:
   oOrganizationId:
     Description: Organization ID
-    Value: !GetAtt rOrganization.Id
+    Value: !If
+      - cHasOrganizationId
+      - !Ref pOrganizationId
+      - !GetAtt rOrganization.Id
   oInstanceArn:
     Description: IAM Identity Center Instance Arn
     Value: !Ref pInstanceArn
