@@ -47,20 +47,61 @@ Parameters:
   pGithubOrganization:
     Type: String
     Description: GitHub Organization or User
+  pCreateNewAwsOrg:
+    Type: String
+    Description: Specify whether to create the AWS Organization or if one already exists. Select no if you already have an AWS Organization.
+    Default: "Yes"
+    AllowedValues:
+      - "Yes"
+      - "No"
+  pOrganizationId:
+    Type: String
+    Description: Existing AWS Organizations ID
+    Default: ""
+  pOrganizationRootId:
+    Type: String
+    Description: Existing AWS Organizations Root ID
+    Default: ""
 
 Conditions:
+  cCreateNewAwsOrg: !Equals ["Yes", !Ref pCreateNewAwsOrg]
   cHasInstanceArn: !Not [!Equals [!Ref pInstanceArn, ""]]
+  cHasOrganizationId: !And 
+    - !Not [!Condition cCreateNewAwsOrg]
+    - !Not [!Equals [!Ref pOrganizationId, ""]]
+  cHasOrganizationRootId: !And
+    - !Not [!Condition cCreateNewAwsOrg]
+    - !Not [!Equals [!Ref pOrganizationRootId, ""]]
+
+Rules:
+  tCreateOrganization:
+    RuleCondition: !Equals ["No", !Ref pCreateNewAwsOrg]
+    Assertions:
+      - Assert: !Or
+          - !Equals [!Ref pOrganizationId, ""]
+          - !Equals [!Ref pOrganizationRootId, ""]
+        AssertDescription: "Must provide existing AWS Organizations ID and AWS Organizations Root ID"
 
 Resources:
   rOrganization:
     Type: "AWS::Organizations::Organization"
+    Condition: cCreateNewAwsOrg
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
       FeatureSet: ALL
 
+  rOrgWaiter:
+    Type: "AWS::CloudFormation::WaitConditionHandle"
+    Metadata:
+      WaitOn: !If
+        - cCreateNewAwsOrg
+        - !Ref rOrganization
+        - !Ref AWS::NoValue
+
   rOrganizationPolicy:
     Type: "AWS::Organizations::ResourcePolicy"
+    DependsOn: rOrgWaiter
     Properties:
       Content:
         Version: "2012-10-17"
@@ -74,7 +115,10 @@ Resources:
             Resource: "*"
             Condition:
               StringEquals:
-                "aws:PrincipalOrgID": !GetAtt rOrganization.Id
+                "aws:PrincipalOrgID": !If 
+                  - cHasOrganizationId
+                  - !Ref pOrganizationId
+                  - !GetAtt rOrganization.Id
 
   rRootServicePolicy:
     Type: "AWS::Organizations::Policy"
@@ -112,7 +156,10 @@ Resources:
         - Key: "aws-cloudformation:logical-id"
           Value: rRootServicePolicy
       TargetIds:
-        - !GetAtt rOrganization.RootId
+        - !If
+          - cHasOrganizationRootId
+          - !Ref pOrganizationRootId
+          - !GetAtt rOrganization.RootId
       Type: SERVICE_CONTROL_POLICY
   
   rRootResourcePolicy:
@@ -140,7 +187,10 @@ Resources:
             Resource: "*"
             Condition:
               StringNotEqualsIfExists:
-                "aws:PrincipalOrgID": !GetAtt rOrganization.Id
+                "aws:PrincipalOrgID": !If
+                  - cHasOrganizationId
+                  - !Ref pOrganizationId
+                  - !GetAtt rOrganization.Id
                 "aws:ResourceTag/dp:exclude:identity": "true"
               BoolIfExists:
                 "aws:PrincipalIsAWSService": "false"
@@ -156,7 +206,10 @@ Resources:
             Resource: "*"
             Condition:
               StringNotEqualsIfExists:
-                "aws:PrincipalOrgID": !GetAtt rOrganization.Id
+                "aws:PrincipalOrgID": !If
+                  - cHasOrganizationId
+                  - !Ref pOrganizationId
+                  - !GetAtt rOrganization.Id
                 "aws:ResourceTag/dp:exclude:identity": "true"
               "Null":
                 "aws:SourceAccount": "false"
@@ -185,7 +238,10 @@ Resources:
                 "SAML:aud": "true"
               StringNotEqualsIfExists:
                 "aws:PrincipalTag/team": admin
-                "aws:PrincipalOrgID": !GetAtt rOrganization.Id
+                "aws:PrincipalOrgID": !If
+                  - cHasOrganizationId
+                  - !Ref pOrganizationId
+                  - !GetAtt rOrganization.Id
               "ForAnyValue:StringLike":
                 "aws:TagKeys":
                   - "dp:*"
@@ -200,7 +256,10 @@ Resources:
         - Key: "aws-cloudformation:logical-id"
           Value: rRootResourcePolicy
       TargetIds:
-        - !GetAtt rOrganization.RootId
+        - !If
+          - cHasOrganizationRootId
+          - !Ref pOrganizationRootId
+          - !GetAtt rOrganization.RootId
       Type: RESOURCE_CONTROL_POLICY
   
   rTrustedOIDCTenantsPolicy:
@@ -231,7 +290,10 @@ Resources:
         - Key: "aws-cloudformation:logical-id"
           Value: rTrustedOIDCTenantsPolicy
       TargetIds:
-        - !GetAtt rOrganization.RootId
+        - !If
+          - cHasOrganizationRootId
+          - !Ref pOrganizationRootId
+          - !GetAtt rOrganization.RootId
       Type: RESOURCE_CONTROL_POLICY
 
   rRootDeclarativePolicyEC2:
@@ -308,7 +370,10 @@ Resources:
         - Key: "aws-cloudformation:logical-id"
           Value: rRootDeclarativePolicyEC2
       TargetIds:
-        - !GetAtt rOrganization.RootId
+        - !If
+          - cHasOrganizationRootId
+          - !Ref pOrganizationRootId
+          - !GetAtt rOrganization.RootId
       Type: DECLARATIVE_POLICY_EC2
 
   rRootAIOptOutPolicy:
@@ -337,48 +402,73 @@ Resources:
           Value: !Ref "AWS::StackId"
         - Key: "aws-cloudformation:logical-id"
           Value: rRootAIOptOutPolicy
-      # TargetIds:
-      #  - !GetAtt rOrganization.RootId
+      #TargetIds:
+      #  - !If
+      #    - cHasOrganizationRootId
+      #    - !Ref pOrganizationRootId
+      #    - !GetAtt rOrganization.RootId
       Type: AISERVICES_OPT_OUT_POLICY
 
   rExceptionsOu:
     Type: "AWS::Organizations::OrganizationalUnit"
+    DependsOn: rOrgWaiter
     Properties:
       Name: Exceptions
-      ParentId: !GetAtt rOrganization.RootId
+      ParentId: !If
+        - cHasOrganizationRootId
+        - !Ref pOrganizationRootId
+        - !GetAtt rOrganization.RootId
 
   rInfrastructureOu:
     Type: "AWS::Organizations::OrganizationalUnit"
+    DependsOn: rOrgWaiter
     Properties:
       Name: Infrastructure
-      ParentId: !GetAtt rOrganization.RootId
+      ParentId: !If
+        - cHasOrganizationRootId
+        - !Ref pOrganizationRootId
+        - !GetAtt rOrganization.RootId
 
   rSecurityOu:
     Type: "AWS::Organizations::OrganizationalUnit"
+    DependsOn: rOrgWaiter
     Properties:
       Name: !Ref pSecurityOuName
-      ParentId: !GetAtt rOrganization.RootId
+      ParentId: !If
+        - cHasOrganizationRootId
+        - !Ref pOrganizationRootId
+        - !GetAtt rOrganization.RootId
 
   rSandboxOu:
     Type: "AWS::Organizations::OrganizationalUnit"
+    DependsOn: rOrgWaiter
     Properties:
       Name: !Ref pSandboxOuName
-      ParentId: !GetAtt rOrganization.RootId
+      ParentId: !If
+        - cHasOrganizationRootId
+        - !Ref pOrganizationRootId
+        - !GetAtt rOrganization.RootId
 
   rWorkloadsOu:
     Type: "AWS::Organizations::OrganizationalUnit"
+    DependsOn: rOrgWaiter
     Properties:
       Name: Workloads
-      ParentId: !GetAtt rOrganization.RootId
+      ParentId: !If
+        - cHasOrganizationRootId
+        - !Ref pOrganizationRootId
+        - !GetAtt rOrganization.RootId
 
   rNonProdOu:
     Type: "AWS::Organizations::OrganizationalUnit"
+    DependsOn: rOrgWaiter
     Properties:
       Name: NonProd
       ParentId: !Ref rWorkloadsOu
 
   rProdOu:
     Type: "AWS::Organizations::OrganizationalUnit"
+    DependsOn: rOrgWaiter
     Properties:
       Name: Prod
       ParentId: !Ref rWorkloadsOu
@@ -574,7 +664,7 @@ Resources:
   rActivateCustomResource:
     Type: "AWS::CloudFormation::CustomResource"
     DependsOn:
-      - rOrganization
+      - rOrgWaiter
       - rCloudWatchLogsPolicy
     Properties:
       ServiceTimeout: 15  # seconds
@@ -670,7 +760,10 @@ Resources:
         - ParameterKey: pManagementAccountId
           ParameterValue: !Ref "AWS::AccountId"
         - ParameterKey: pOrganizationId
-          ParameterValue: !GetAtt rOrganization.Id
+          ParameterValue: !If 
+            - cHasOrganizationId
+            - !Ref pOrganizationId
+            - !GetAtt rOrganization.Id
         - ParameterKey: pCloudFormationRoleName
           ParameterValue: !Ref pCloudFormationRoleName
         - ParameterKey: pServiceCatalogRoleName
@@ -679,7 +772,10 @@ Resources:
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds:
-              - !GetAtt rOrganization.RootId
+              - !If 
+                - cHasOrganizationRootId
+                - !Ref pOrganizationRootId
+                - !GetAtt rOrganization.RootId
           Regions: !Ref pRegions
       StackSetName: AWSPlatform-BASELINE-PARAMETERS
       TemplateURL: ./src/stackset_parameters/template.yml
@@ -1021,7 +1117,10 @@ Resources:
 Outputs:
   oOrganizationId:
     Description: Organization ID
-    Value: !GetAtt rOrganization.Id
+    Value: !If
+      - cHasOrganizationId
+      - !Ref pOrganizationId
+      - !GetAtt rOrganization.Id
   oInstanceArn:
     Description: IAM Identity Center Instance Arn
     Value: !Ref pInstanceArn
