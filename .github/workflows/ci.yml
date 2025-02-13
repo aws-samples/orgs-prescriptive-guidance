@@ -48,6 +48,8 @@ jobs:
           role-to-assume: ${{ vars.ASSUME_ROLE_ARN }}
           role-session-name: ci
           aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: true
+          role-duration-seconds: 300  # 5 minutes
 
       #- name: Validate template
       #  run: sam validate --lint
