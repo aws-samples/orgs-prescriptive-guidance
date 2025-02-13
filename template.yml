@@ -653,7 +653,10 @@ Resources:
       Description: "DO NOT DELETE - Organization Activation Function"
       Environment:
         Variables:
-          ROOT_ID: !GetAtt rOrganization.RootId
+          ROOT_ID: !If
+            - cHasOrganizationRootId
+            - !Ref pOrganizationRootId
+            - !GetAtt rOrganization.RootId
       Handler: index.handler
       MemorySize: 1024  # megabytes
       PropagateTags: true
@@ -737,7 +740,10 @@ Resources:
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds:
-              - !GetAtt rOrganization.RootId
+              - !If
+                - cHasOrganizationRootId
+                - !Ref pOrganizationRootId
+                - !GetAtt rOrganization.RootId
           Regions:
             - !Ref "AWS::Region"  # single region only for the IAM roles
       StackSetName: AWSPlatform-BASELINE-ROLES
