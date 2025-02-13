@@ -72,8 +72,8 @@ policy_types = [
 
 @helper.create
 def create(event: dict, context: LambdaContext):
-    if status == "ACTIVE":
-        logger.warning("Organizations access is already active")
+    if status == "ENABLED":
+        logger.warning("Organizations access is already enabled")
     else:
         logger.debug("Activating organizations access...")
         cloudformation.activate_organizations_access()
