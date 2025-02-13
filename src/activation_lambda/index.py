@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING
 from aws_lambda_powertools import Logger
 from aws_lambda_powertools.utilities.typing import LambdaContext
 import boto3
+from botocore.config import Config
 from crhelper import CfnResource
 
 if TYPE_CHECKING:
@@ -42,12 +43,21 @@ helper = CfnResource(
     ssl_verify=None,
 )
 
-cloudformation: "CloudFormationClient" = boto3.client("cloudformation")
-iam: "IAMClient" = boto3.client("iam")
+config = Config(
+    retries={
+        "max_attempts": 10,
+        "mode": "standard",
+    },
+    tcp_keepalive=True,
+)
+
+cloudformation: "CloudFormationClient" = boto3.client("cloudformation", config=config)
+iam: "IAMClient" = boto3.client("iam", config=config)
 organizations: "OrganizationsClient" = boto3.client(
     "organizations",
     region_name="us-east-1",
     endpoint_url="https://organizations.us-east-1.amazonaws.com",
+    config=config,
 )
 
 try:
@@ -111,7 +121,10 @@ def delete(event: dict, context: LambdaContext):
         logger.warning("Organizations access is already disabled")
     else:
         logger.debug("Deactivating organizations access...")
-        cloudformation.deactivate_organizations_access()
+        try:
+            cloudformation.deactivate_organizations_access()
+        except cloudformation.exceptions.InvalidOperationException:
+            pass
         logger.info("Successfully deactivated organizations access")
 
     for policy_type in policy_types:
