@@ -214,7 +214,7 @@ Resources:
             Resource: "*"
             Condition:
               StringNotEqualsIfExists:
-                "aws:PrincipalOrgID": !If
+                "aws:SourceOrgID": !If
                   - cHasOrganizationId
                   - !Ref pOrganizationId
                   - !GetAtt rOrganization.Id
