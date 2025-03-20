@@ -32,6 +32,7 @@ Parameters:
     ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
     AllowedPattern: "[a-zA-Z0-9]+"
     MinLength: 1
+    MaxLength: 64
   pServiceCatalogRoleName:
     Type: String
     Description: Service Catalog IAM role name
@@ -39,6 +40,15 @@ Parameters:
     ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
     AllowedPattern: "[a-zA-Z0-9]+"
     MinLength: 1
+    MaxLength: 64
+  pSupportRoleName:
+    Type: String
+    Description: AWS Support IAM role name
+    Default: SupportRole
+    ConstraintDescription: "must only contain uppercase and lowercase letters and numbers"
+    AllowedPattern: "[a-zA-Z0-9]+"
+    MinLength: 1
+    MaxLength: 64
 
 Resources:
   rEmergencyAccessOpsRole:
@@ -279,6 +289,35 @@ Resources:
               - "s3:*"
             Resource: "*"
 
+  # Required for SecurityHub [IAM.18]
+  # https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-18
+  rSupportRole:
+    Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "Ignoring explicit role name"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+          Action: "sts:AssumeRole"
+      Description: !Sub "DO NOT DELETE - Used for access to AWS Support. Created by CloudFormation ${AWS::StackId}"
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSSupportAccess"
+      RoleName: !Ref pSupportRoleName
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rSupportRole
+
 Outputs:
   oCloudFormationRoleArn:
     Description: CloudFormation IAM role ARN
@@ -292,6 +331,12 @@ Outputs:
   oServiceCatalogRoleName:
     Description: Service Catalog IAM role name
     Value: !Ref rServiceCatalogRole
+  oSupportRoleArn:
+    Description: Support IAM role ARN
+    Value: !GetAtt rSupportRole.Arn
+  oSupportRoleName:
+    Description: Support IAM role name
+    Value: !Ref rSupportRole
   oDeveloperBoundaryPolicyArn:
     Description: Developer boundary IAM policy ARN
     Value: !Ref rDeveloperBoundary
