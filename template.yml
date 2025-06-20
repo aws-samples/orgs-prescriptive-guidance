@@ -192,6 +192,8 @@ Resources:
               - "sts:GetServiceBearerToken"
               - "sts:GetSessionToken"
               - "sts:SetContext"
+              - "aoss:*"
+              - "ecr:*"
             Resource: "*"
             Condition:
               StringNotEqualsIfExists:
@@ -211,6 +213,8 @@ Resources:
               - "kms:*"
               - "secretsmanager:*"
               - "sts:*"
+              - "aoss:*"
+              - "ecr:*"
             Resource: "*"
             Condition:
               StringNotEqualsIfExists:
@@ -232,6 +236,8 @@ Resources:
               - "kms:*"
               - "secretsmanager:*"
               - "sts:*"
+              - "aoss:*"
+              - "ecr:*"
             Resource: "*"
             Condition:
               BoolIfExists:

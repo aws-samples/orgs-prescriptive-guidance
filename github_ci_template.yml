@@ -250,11 +250,11 @@ Resources:
 
 Outputs:
   oCloudFormationRoleArn:
-    Description: CloudFormation IAM Role ARN
+    Description: CF_ROLE_ARN - CloudFormation IAM Role ARN
     Value: !GetAtt rCloudFormationRole.Arn
   oGitHubRoleArn:
-    Description: GitHub Actions IAM Role ARN
+    Description: ASSUME_ROLE_ARN - GitHub Actions IAM Role ARN
     Value: !GetAtt rGitHubRole.Arn
   oArtifactBucket:
-    Description: Artifact Bucket Name
+    Description: ARTIFACT_BUCKET - Artifact Bucket Name
     Value: !Ref rArtifactBucket
