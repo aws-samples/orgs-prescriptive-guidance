@@ -97,11 +97,16 @@ def create(event: dict, context: LambdaContext):
 
     for service_principal in SERVICE_PRINCIPALS:
         logger.debug(f"Enabling AWS service access for {service_principal}...")
-        try:
-            organizations.enable_aws_service_access(ServicePrincipal=service_principal)
-        except organizations.exceptions.ConcurrentModificationException:
-            time.sleep(0.1)
-        logger.info(f"Enabled AWS service access for {service_principal}")
+        while True:
+            try:
+                organizations.enable_aws_service_access(
+                    ServicePrincipal=service_principal
+                )
+            except organizations.exceptions.ConcurrentModificationException:
+                time.sleep(0.1)
+            else:
+                logger.info(f"Enabled AWS service access for {service_principal}")
+                break
 
     for policy_type in POLICY_TYPES:
         logger.debug(f"Enabling {policy_type} policy type...")
@@ -113,8 +118,8 @@ def create(event: dict, context: LambdaContext):
             except organizations.exceptions.ConcurrentModificationException:
                 time.sleep(0.1)
             else:
+                logger.info(f"Enabled {policy_type} policy type")
                 break
-        logger.info(f"Enabled {policy_type} policy type")
 
     logger.debug("Enabling organizations root credentials management...")
     iam.enable_organizations_root_credentials_management()
@@ -148,9 +153,11 @@ def delete(event: dict, context: LambdaContext):
                 break
             except organizations.exceptions.ConcurrentModificationException:
                 time.sleep(0.1)
-            else:
+            except organizations.exceptions.AWSOrganizationsNotInUseException:
                 break
-        logger.info(f"Disabled {policy_type} policy type")
+            else:
+                logger.info(f"Disabled {policy_type} policy type")
+                break
 
     logger.debug("Disabling organizations root sessions...")
     try:
@@ -172,13 +179,18 @@ def delete(event: dict, context: LambdaContext):
 
     for service_principal in SERVICE_PRINCIPALS:
         logger.debug(f"Disabling AWS service access for {service_principal}...")
-        try:
-            organizations.disable_aws_service_access(ServicePrincipal=service_principal)
-        except organizations.exceptions.ConcurrentModificationException:
-            time.sleep(0.1)
-        except organizations.exceptions.AWSOrganizationsNotInUseException:
-            pass
-        logger.info(f"Disabled AWS service access for {service_principal}")
+        while True:
+            try:
+                organizations.disable_aws_service_access(
+                    ServicePrincipal=service_principal
+                )
+            except organizations.exceptions.ConcurrentModificationException:
+                time.sleep(0.1)
+            except organizations.exceptions.AWSOrganizationsNotInUseException:
+                break
+            else:
+                logger.info(f"Disabled AWS service access for {service_principal}")
+                break
 
 
 @logger.inject_lambda_context(log_event=True)
