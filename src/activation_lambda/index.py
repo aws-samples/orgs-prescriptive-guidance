@@ -77,6 +77,7 @@ policy_types = [
     "BACKUP_POLICY",
     "CHATBOT_POLICY",
     "TAG_POLICY",
+    "SECURITYHUB_POLICY",
 ]
 
 
