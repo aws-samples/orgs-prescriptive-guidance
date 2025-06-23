@@ -153,11 +153,21 @@ def delete(event: dict, context: LambdaContext):
         logger.info(f"Disabled {policy_type} policy type")
 
     logger.debug("Disabling organizations root sessions...")
-    iam.disable_organizations_root_sessions()
+    try:
+        iam.disable_organizations_root_sessions()
+    except iam.exceptions.ServiceAccessNotEnabledException:
+        pass
+    except iam.exceptions.OrganizationNotFoundException:
+        pass
     logger.info("Disabled organizations root sessions")
 
     logger.debug("Disabling organizations root credentials management...")
-    iam.disable_organizations_root_credentials_management()
+    try:
+        iam.disable_organizations_root_credentials_management()
+    except iam.exceptions.ServiceAccessNotEnabledException:
+        pass
+    except iam.exceptions.OrganizationNotFoundException:
+        pass
     logger.info("Disabled organizations root credentials management")
 
     for service_principal in SERVICE_PRINCIPALS:
@@ -166,6 +176,8 @@ def delete(event: dict, context: LambdaContext):
             organizations.disable_aws_service_access(ServicePrincipal=service_principal)
         except organizations.exceptions.ConcurrentModificationException:
             time.sleep(0.1)
+        except organizations.exceptions.AWSOrganizationsNotInUseException:
+            pass
         logger.info(f"Disabled AWS service access for {service_principal}")
 
 
