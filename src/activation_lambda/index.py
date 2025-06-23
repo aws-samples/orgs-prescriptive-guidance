@@ -69,7 +69,7 @@ try:
 except Exception as e:
     helper.init_failure(e)
 
-policy_types = [
+POLICY_TYPES = [
     "SERVICE_CONTROL_POLICY",
     "RESOURCE_CONTROL_POLICY",
     "DECLARATIVE_POLICY_EC2",
@@ -78,6 +78,11 @@ policy_types = [
     "CHATBOT_POLICY",
     "TAG_POLICY",
     "SECURITYHUB_POLICY",
+]
+
+SERVICE_PRINCIPALS = [
+    "iam.amazonaws.com",
+    "securityhub.amazonaws.com",
 ]
 
 
@@ -90,7 +95,15 @@ def create(event: dict, context: LambdaContext):
         cloudformation.activate_organizations_access()
         logger.info("Successfully activated organizations access")
 
-    for policy_type in policy_types:
+    for service_principal in SERVICE_PRINCIPALS:
+        logger.debug(f"Enabling AWS service access for {service_principal}...")
+        try:
+            organizations.enable_aws_service_access(ServicePrincipal=service_principal)
+        except organizations.exceptions.ConcurrentModificationException:
+            time.sleep(0.1)
+        logger.info(f"Enabled AWS service access for {service_principal}")
+
+    for policy_type in POLICY_TYPES:
         logger.debug(f"Enabling {policy_type} policy type...")
         while True:
             try:
@@ -102,10 +115,6 @@ def create(event: dict, context: LambdaContext):
             else:
                 break
         logger.info(f"Enabled {policy_type} policy type")
-
-    logger.debug("Enabling AWS service access for IAM...")
-    organizations.enable_aws_service_access(ServicePrincipal="iam.amazonaws.com")
-    logger.info("Enabled AWS service access for IAM")
 
     logger.debug("Enabling organizations root credentials management...")
     iam.enable_organizations_root_credentials_management()
@@ -128,7 +137,7 @@ def delete(event: dict, context: LambdaContext):
             pass
         logger.info("Successfully deactivated organizations access")
 
-    for policy_type in policy_types:
+    for policy_type in POLICY_TYPES:
         logger.debug(f"Disabling {policy_type} policy type...")
         while True:
             try:
@@ -151,9 +160,13 @@ def delete(event: dict, context: LambdaContext):
     iam.disable_organizations_root_credentials_management()
     logger.info("Disabled organizations root credentials management")
 
-    logger.debug("Disabling AWS service access for IAM...")
-    organizations.disable_aws_service_access(ServicePrincipal="iam.amazonaws.com")
-    logger.info("Disabled AWS service access for IAM")
+    for service_principal in SERVICE_PRINCIPALS:
+        logger.debug(f"Disabling AWS service access for {service_principal}...")
+        try:
+            organizations.disable_aws_service_access(ServicePrincipal=service_principal)
+        except organizations.exceptions.ConcurrentModificationException:
+            time.sleep(0.1)
+        logger.info(f"Disabled AWS service access for {service_principal}")
 
 
 @logger.inject_lambda_context(log_event=True)
