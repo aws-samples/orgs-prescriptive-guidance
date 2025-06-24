@@ -9,7 +9,11 @@ Description: "DO NOT DELETE - AWS Organization"
 Parameters:
   pInstanceArn:
     Type: String
-    Description: AWS Identity Center Center Instance ARN
+    Description: AWS Identity Center Instance ARN
+    Default: ""
+  pInstanceRegion:
+    Type: String
+    Description: AWS Identity Center Instance Region
     Default: ""
   pDeveloperPrefix:
     Type: String
@@ -74,6 +78,7 @@ Parameters:
 Conditions:
   cCreateNewAwsOrg: !Equals ["Yes", !Ref pCreateNewAwsOrg]
   cHasInstanceArn: !Not [!Equals [!Ref pInstanceArn, ""]]
+  cHasInstanceRegion: !Not [!Equals [!Ref pInstanceRegion, ""]]
   cHasOrganizationId: !And 
     - !Not [!Condition cCreateNewAwsOrg]
     - !Not [!Equals [!Ref pOrganizationId, ""]]
