@@ -11,6 +11,10 @@ Parameters:
     Type: String
     Description: AWS Identity Center Center Instance ARN
     Default: ""
+  pInstanceRegion:
+    Type: String
+    Description: AWS Identity Center Center Instance Region
+    Default: ""
   pDeveloperPrefix:
     Type: String
     Description: Required prefix for self-service IAM roles and CloudFormation stacks
@@ -74,6 +78,7 @@ Parameters:
 Conditions:
   cCreateNewAwsOrg: !Equals ["Yes", !Ref pCreateNewAwsOrg]
   cHasInstanceArn: !Not [!Equals [!Ref pInstanceArn, ""]]
+  cHasInstanceRegion: !Not [!Equals [!Ref pInstanceRegion, ""]]
   cHasOrganizationId: !And 
     - !Not [!Condition cCreateNewAwsOrg]
     - !Not [!Equals [!Ref pOrganizationId, ""]]
@@ -1135,6 +1140,18 @@ Resources:
           Value: !Ref "AWS::StackId"
         - Key: "aws-cloudformation:logical-id"
           Value: rSupportPermissionSet
+
+  rMultiPartyApprovalIdentitySource:
+    Type: "AWS::MPA::IdentitySource"
+    Condition: cHasInstanceArn
+    Properties:
+      IdentitySourceParameters:
+        IamIdentityCenter:
+          InstanceArn: !Ref pInstanceArn
+          Region: !If
+            - cHasInstanceRegion
+            - !Ref pInstanceRegion
+            - !Ref "AWS::Region"
 
 Outputs:
   oOrganizationId:
