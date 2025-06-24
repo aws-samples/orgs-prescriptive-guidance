@@ -1141,17 +1141,17 @@ Resources:
         - Key: "aws-cloudformation:logical-id"
           Value: rSupportPermissionSet
 
-  rMultiPartyApprovalIdentitySource:
-    Type: "AWS::MPA::IdentitySource"
-    Condition: cHasInstanceArn
-    Properties:
-      IdentitySourceParameters:
-        IamIdentityCenter:
-          InstanceArn: !Ref pInstanceArn
-          Region: !If
-            - cHasInstanceRegion
-            - !Ref pInstanceRegion
-            - !Ref "AWS::Region"
+  #rMultiPartyApprovalIdentitySource:
+  #  Type: "AWS::MPA::IdentitySource"
+  #  Condition: cHasInstanceArn
+  #  Properties:
+  #    IdentitySourceParameters:
+  #      IamIdentityCenter:
+  #        InstanceArn: !Ref pInstanceArn
+  #        Region: !If
+  #          - cHasInstanceRegion
+  #          - !Ref pInstanceRegion
+  #          - !Ref "AWS::Region"
 
 Outputs:
   oOrganizationId:
