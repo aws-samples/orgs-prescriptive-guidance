@@ -744,6 +744,8 @@ Resources:
         - CAPABILITY_NAMED_IAM
       Description: StackSet to deploy IAM roles to member accounts
       # ExecutionRoleName not supported on SERVICE_MANAGED
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureToleranceCount: 1
         MaxConcurrentPercentage: 100
@@ -779,6 +781,8 @@ Resources:
         RetainStacksOnAccountRemoval: false
       Description: StackSet to deploy SSM parameters to member accounts
       # ExecutionRoleName not supported on SERVICE_MANAGED
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureToleranceCount: 1
         MaxConcurrentPercentage: 100
