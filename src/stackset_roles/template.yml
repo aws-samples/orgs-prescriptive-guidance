@@ -220,7 +220,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              AWS: !Sub "arn:${AWS::Partition}:iam::${pManagementAccountId}:root"
+              AWS: !Sub "arn:${AWS::Partition}:iam::${pManagementAccountId}:role/AWSCloudFormationStackSetAdministrationRole"
             Action: "sts:AssumeRole"
       Description: !Sub "DO NOT DELETE - Used by CloudFormation StackSets. Created by CloudFormation ${AWS::StackId}"
       ManagedPolicyArns:
