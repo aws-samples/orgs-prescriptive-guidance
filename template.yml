@@ -645,6 +645,7 @@ Resources:
                       - "member.org.stacksets.cloudformation.amazonaws.com"
                       - "iam.amazonaws.com"
                       - "securityhub.amazonaws.com"
+                      - "inspector2.amazonaws.com"
               - Effect: Allow
                 Action: "iam:CreateServiceLinkedRole"
                 Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/stacksets.cloudformation.amazonaws.com/AWSServiceRoleForCloudFormationStackSetsOrgAdmin*"
