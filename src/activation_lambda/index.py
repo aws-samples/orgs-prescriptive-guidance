@@ -85,6 +85,7 @@ POLICY_TYPES = [
 SERVICE_PRINCIPALS = [
     "iam.amazonaws.com",
     "securityhub.amazonaws.com",
+    "inspector2.amazonaws.com",
 ]
 
 
