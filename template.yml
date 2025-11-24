@@ -698,7 +698,7 @@ Resources:
       MemorySize: 1024  # megabytes
       PropagateTags: true
       Role: !GetAtt rFunctionRole.Arn
-      Runtime: python3.13
+      Runtime: python3.14
       Timeout: 20  # seconds
 
   rActivateCustomResource:
