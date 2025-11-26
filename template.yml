@@ -440,12 +440,40 @@ Resources:
           Value: !Ref "AWS::StackId"
         - Key: "aws-cloudformation:logical-id"
           Value: rRootAIOptOutPolicy
-      #TargetIds:
-      #  - !If
-      #    - cHasOrganizationRootId
-      #    - !Ref pOrganizationRootId
-      #    - !GetAtt rOrganization.RootId
+      TargetIds:
+        - !If
+          - cHasOrganizationRootId
+          - !Ref pOrganizationRootId
+          - !GetAtt rOrganization.RootId
       Type: AISERVICES_OPT_OUT_POLICY
+
+  rRootS3Policy:
+    Type: "AWS::Organizations::Policy"
+    DependsOn: rActivateCustomResource
+    Properties:
+      Content: |-
+        {
+          "s3_attributes": {
+            "public_access_block_configuration": {
+              "@@assign": "all"
+            }
+          }
+        }
+      Description: Enables all four Amazon S3 Block Public Access settings at the organization level
+      Name: RootPolicy
+      Tags:
+        - Key: "aws-cloudformation:stack-name"
+          Value: !Ref "AWS::StackName"
+        - Key: "aws-cloudformation:stack-id"
+          Value: !Ref "AWS::StackId"
+        - Key: "aws-cloudformation:logical-id"
+          Value: rRootS3Policy
+      TargetIds:
+        - !If
+          - cHasOrganizationRootId
+          - !Ref pOrganizationRootId
+          - !GetAtt rOrganization.RootId
+      Type: S3_POLICY
 
   rExceptionsOu:
     Type: "AWS::Organizations::OrganizationalUnit"
