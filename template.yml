@@ -212,8 +212,11 @@ Resources:
           - Sid: EnforceNetworkPerimeter
             Effect: Deny
             Principal: "*"
-            Action: "s3:*"
-            Resource: "*"
+            Action:
+              - "s3:DeleteObject*"
+              - "s3:GetObject*"
+              - "s3:PutObject*"
+            NotResource: !Sub "arn:${AWS::Partition}:s3:::cf-templates-*"
             Condition:
               StringNotEqualsIfExists:
                 "aws:VpceOrgID": !If
